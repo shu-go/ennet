@@ -47,37 +47,38 @@ func expand(n *Node) string {
 			return ""
 		}
 
-		s := ""
+		b := strings.Builder{}
 		curr := n.FirstChild
 		for curr != nil {
-			s += expand(curr)
+			b.WriteString(expand(curr))
 			curr = curr.NextSibling
 		}
 
-		return applyMul(s, n.Mul)
+		return applyMul(b.String(), n.Mul)
 
 	case Element:
-		s := "<" + n.Data
+		b := strings.Builder{}
+		b.WriteString("<" + n.Data)
 		if len(n.Attribute) > 0 {
 			keys := maps.Keys(n.Attribute)
 			slices.Sort(keys)
 			for _, k := range keys {
-				s += " " + k + `="` + strings.ReplaceAll(n.Attribute[k], `"`, `\"`) + `"`
+				b.WriteString(" " + k + `="` + strings.ReplaceAll(n.Attribute[k], `"`, `\"`) + `"`)
 			}
 		}
 
 		if n.FirstChild == nil {
-			s += " />"
+			b.WriteString(" />")
 		} else {
-			s += ">"
+			b.WriteString(">")
 			curr := n.FirstChild
 			for curr != nil {
-				s += expand(curr)
+				b.WriteString(expand(curr))
 				curr = curr.NextSibling
 			}
-			s += "</" + n.Data + ">"
+			b.WriteString("</" + n.Data + ">")
 		}
-		return applyMul(s, n.Mul)
+		return applyMul(b.String(), n.Mul)
 
 	default:
 
