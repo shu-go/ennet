@@ -27,8 +27,8 @@ func NewLexer(in io.Reader) *Lexer {
 	r.Reset(in)
 	return &Lexer{
 		in:       r,
-		scanning: make([]Token, 0),
-		scanned:  make([]Token, 0),
+		scanning: make([]Token, 0, 16),
+		scanned:  make([]Token, 0, 16),
 	}
 }
 
