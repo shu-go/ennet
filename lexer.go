@@ -206,7 +206,7 @@ func (l *Lexer) scanNext() Token {
 	default:
 		if unicode.IsSpace(r) {
 			//fmt.Fprintf(os.Stderr, "skipping ... %q\n", string(r))
-			l.skipSpace(r, sz)
+			l.skipSpace(r)
 			return l.scanNext()
 		}
 
@@ -239,7 +239,7 @@ func (l *Lexer) scanNext() Token {
 	}
 }
 
-func (l *Lexer) skipSpace(initr rune, initsz int) {
+func (l *Lexer) skipSpace(initr rune) {
 	if unicode.IsSpace(initr) {
 		for {
 			r, sz, _ := l.in.ReadRune()
