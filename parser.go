@@ -65,11 +65,11 @@ func (p *Parser) parse(f func(tx *LexerTx) bool, tx *LexerTx) bool {
 
 	if !f(&txx) {
 		txx.Rollback()
-		debug(p.lexer.Dump())
+		//debug(p.lexer.Dump())
 		return false
 	}
 
-	debug(p.lexer.Dump())
+	//debug(p.lexer.Dump())
 	return true
 
 }
@@ -149,24 +149,24 @@ func (p *Parser) tagElement(tx *LexerTx) bool {
 
 	for {
 		debug("tagElement", "TRY", "id")
-		debug(p.lexer.Dump())
+		//debug(p.lexer.Dump())
 		if p.parse(p.id, tx) {
 			debug("tagElement", "id")
 			continue
 		}
 		debug("tagElement", "TRY", "class")
-		debug(p.lexer.Dump())
+		//debug(p.lexer.Dump())
 		if p.parse(p.class, tx) {
 			debug("tagElement", "class")
 			continue
 		}
 		debug("tagElement", "TRY", "attrList")
-		debug(p.lexer.Dump())
+		//debug(p.lexer.Dump())
 		if p.parse(p.attrList, tx) {
 			debug("tagElement", "attrList")
 			continue
 		}
-		debug(p.lexer.Dump())
+		//debug(p.lexer.Dump())
 		break
 	}
 
