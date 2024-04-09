@@ -31,7 +31,7 @@ func Expand(s string) (string, error) {
 }
 
 func expand(n *Node) string {
-	debug(n.Type, n.Data)
+	//debug(n.Type, n.Data)
 
 	switch n.Type {
 	case Text:
@@ -88,7 +88,7 @@ func applyMul(s string, mul int) string {
 			re := regexp.MustCompile(`(\$+)(@(-)?(\d+)?)?`)
 			s += re.ReplaceAllStringFunc(templ, func(tgt string) string {
 				g := re.FindStringSubmatch(tgt)
-				debug(tgt, g)
+				//debug(tgt, g)
 				minus := false
 				base := 1
 				pad := len(g[1])
