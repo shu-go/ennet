@@ -16,7 +16,7 @@ func Example() {
 	// <ul><li class="item-1">ITEM1</li><li class="item-2">ITEM2</li><li class="item-3">ITEM3</li></ul>
 }
 
-func Testennet(t *testing.T) {
+func TestEnnet(t *testing.T) {
 	t.Run("Text", func(t *testing.T) {
 		s, err := ennet.Expand(`{hoge}`)
 		gotwant.TestError(t, err, nil)
@@ -90,7 +90,7 @@ func Testennet(t *testing.T) {
 	})
 }
 
-func TestennetDocumentation(t *testing.T) {
+func TestEnnetDocumentation(t *testing.T) {
 	t.Run(`div>ul>li`, func(t *testing.T) {
 		s, err := ennet.Expand(`div>ul>li`)
 		gotwant.TestError(t, err, nil)
