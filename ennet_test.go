@@ -199,3 +199,10 @@ func TestEnnetDocumentation(t *testing.T) {
 		gotwant.Test(t, s, `<p>Click </p><a>here</a> to continue`)
 	})
 }
+
+func BenchmarkEnnet(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = ennet.Expand(`div>(header>ul>li*2>a)+footer>p`)
+	}
+}
