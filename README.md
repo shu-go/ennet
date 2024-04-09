@@ -1,6 +1,7 @@
 Package ennet parses Emmet-like abbreviations and expands them into XML.
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/shu-go/ennet)](https://goreportcard.com/report/github.com/shu-go/ennet)
+[![Go Reference](https://pkg.go.dev/badge/github.com/shu-go/ennet.svg)](https://pkg.go.dev/github.com/shu-go/ennet)
 ![MIT License](https://img.shields.io/badge/License-MIT-blue)
 
 # go get
