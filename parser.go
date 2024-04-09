@@ -57,6 +57,8 @@ func Parse(in io.Reader, listener Listener) (parseError error) {
 		return errors.New("parse error")
 	}
 
+	p.lexer.Close()
+
 	return nil
 }
 

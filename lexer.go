@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"sync"
 	"unicode"
 )
 
@@ -22,11 +23,18 @@ type Lexer struct {
 }
 
 func NewLexer(in io.Reader) *Lexer {
+	r := readerPool.Get().(*bufio.Reader)
+	r.Reset(in)
 	return &Lexer{
-		in:       bufio.NewReader(in),
+		in:       r,
 		scanning: make([]Token, 0),
 		scanned:  make([]Token, 0),
 	}
+}
+
+func (l *Lexer) Close() {
+	readerPool.Put(l.in)
+	*l = Lexer{}
 }
 
 func (l *Lexer) Next() Token {
@@ -254,4 +262,10 @@ func (l *Lexer) skipSpace(initr rune) {
 			}
 		}
 	}
+}
+
+var readerPool = sync.Pool{
+	New: func() any {
+		return bufio.NewReader(nil)
+	},
 }
