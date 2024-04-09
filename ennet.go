@@ -14,20 +14,26 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"golang.org/x/exp/maps"
 )
 
 // Expand expands Emmet abbreviation in string s.
 func Expand(s string) (string, error) {
-	b := bytes.NewBufferString(s)
+	b := expandBufPool.Get().(*bytes.Buffer)
+	b.Reset()
+	b.WriteString(s)
+
 	nl := NewNodeListener()
 	err := Parse(b, &nl)
 	if err != nil {
 		return "", err
 	}
 
-	return expand(nl.Root), nil
+	result := expand(nl.Root)
+	expandBufPool.Put(b)
+	return result, nil
 }
 
 func expand(n *Node) string {
@@ -111,4 +117,10 @@ func applyMul(s string, mul int) string {
 
 func debug(a ...any) {
 	//rog.Debug(a...)
+}
+
+var expandBufPool = sync.Pool{
+	New: func() any {
+		return &bytes.Buffer{}
+	},
 }
