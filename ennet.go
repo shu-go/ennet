@@ -80,14 +80,15 @@ func expand(n *Node) string {
 	return ""
 }
 
+var mulre = regexp.MustCompile(`(\$+)(@(-)?(\d+)?)?`)
+
 func applyMul(s string, mul int) string {
 	if mul > 0 {
 		templ := s
 		s = ""
 		for i := 0; i < mul; i++ {
-			re := regexp.MustCompile(`(\$+)(@(-)?(\d+)?)?`)
-			s += re.ReplaceAllStringFunc(templ, func(tgt string) string {
-				g := re.FindStringSubmatch(tgt)
+			s += mulre.ReplaceAllStringFunc(templ, func(tgt string) string {
+				g := mulre.FindStringSubmatch(tgt)
 				//debug(tgt, g)
 				minus := false
 				base := 1
