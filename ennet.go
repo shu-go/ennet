@@ -60,12 +60,17 @@ func expand(n *Node) string {
 	case Element:
 		b := strings.Builder{}
 		b.Grow(128)
-		b.WriteString("<" + n.Data)
+		b.WriteString("<")
+		b.WriteString(n.Data)
 		if len(n.Attribute) > 0 {
 			keys := maps.Keys(n.Attribute)
 			slices.Sort(keys)
 			for _, k := range keys {
-				b.WriteString(" " + k + `="` + strings.ReplaceAll(n.Attribute[k], `"`, `\"`) + `"`)
+				b.WriteString(" ")
+				b.WriteString(k)
+				b.WriteString(`="`)
+				b.WriteString(strings.ReplaceAll(n.Attribute[k], `"`, `\"`))
+				b.WriteString(`"`)
 			}
 		}
 
@@ -78,7 +83,9 @@ func expand(n *Node) string {
 				b.WriteString(expand(curr))
 				curr = curr.NextSibling
 			}
-			b.WriteString("</" + n.Data + ">")
+			b.WriteString("</")
+			b.WriteString(n.Data)
+			b.WriteString(">")
 		}
 		return applyMul(b.String(), n.Mul)
 
