@@ -17,19 +17,20 @@ func (tx *LexerTx) Transaction() LexerTx {
 }
 
 func (tx *LexerTx) Inc() {
-	tx.count++
-	if tx.parent != nil {
-		tx.parent.Inc()
+	curr := tx
+	for curr != nil {
+		tx.count++
+		curr = curr.parent
 	}
 }
 
 func (tx *LexerTx) Dec() {
-	if tx.count <= 0 {
-		return
-	}
-	tx.count--
-	if tx.parent != nil {
-		tx.parent.Dec()
+	curr := tx
+	for curr != nil {
+		if tx.count > 0 {
+			tx.count--
+		}
+		curr = curr.parent
 	}
 }
 
