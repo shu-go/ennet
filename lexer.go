@@ -138,7 +138,7 @@ func (l *Lexer) scanNext() Token {
 
 	case '\'', '"':
 		quot := r
-		text := ""
+		text := []rune{}
 		for {
 			r, sz, err = l.in.ReadRune()
 			if sz == 0 {
@@ -157,7 +157,7 @@ func (l *Lexer) scanNext() Token {
 
 				rr, sz, _ := l.in.ReadRune()
 				if rr == quot {
-					text += string(r)
+					text = append(text, r)
 				} else if sz == 0 {
 					break
 				} else {
@@ -165,17 +165,17 @@ func (l *Lexer) scanNext() Token {
 					break
 				}
 			} else {
-				text += string(r)
+				text = append(text, r)
 			}
 		}
 
 		return Token{
 			Type: QTEXT,
-			Text: text,
+			Text: string(text),
 		}
 
 	case '{':
-		text := ""
+		text := []rune{}
 		for {
 			r, sz, err = l.in.ReadRune()
 			if sz == 0 {
@@ -194,7 +194,7 @@ func (l *Lexer) scanNext() Token {
 
 				rr, sz, _ := l.in.ReadRune()
 				if rr == '}' {
-					text += string(r)
+					text = append(text, r)
 				} else if sz == 0 {
 					break
 				} else {
@@ -202,13 +202,13 @@ func (l *Lexer) scanNext() Token {
 					break
 				}
 			} else {
-				text += string(r)
+				text = append(text, r)
 			}
 		}
 
 		return Token{
 			Type: TEXT,
-			Text: text,
+			Text: string(text),
 		}
 
 	default:
@@ -219,13 +219,13 @@ func (l *Lexer) scanNext() Token {
 		}
 
 		// STRING
-		id := string(r)
+		id := []rune{r}
 		for {
 			r, sz, err = l.in.ReadRune()
 			if sz == 0 {
 				return Token{
 					Type: STRING,
-					Text: id,
+					Text: string(id),
 				}
 			} else if err != nil {
 				return Token{
@@ -235,12 +235,12 @@ func (l *Lexer) scanNext() Token {
 			}
 
 			if isSTRING(r) {
-				id += string(r)
+				id = append(id, r)
 			} else {
 				l.in.UnreadRune()
 				return Token{
 					Type: STRING,
-					Text: id,
+					Text: string(id),
 				}
 			}
 		}
