@@ -3,44 +3,25 @@ package ennet
 // LexerTx can not be used in pallarel
 type LexerTx struct {
 	lexer *Lexer
-
-	parent *LexerTx
-	count  int
+	count int
 }
 
 func (tx *LexerTx) Transaction() LexerTx {
 	return LexerTx{
-		lexer:  tx.lexer,
-		parent: tx,
-		count:  0,
-	}
-}
-
-func (tx *LexerTx) Inc() {
-	curr := tx
-	for curr != nil {
-		tx.count++
-		curr = curr.parent
-	}
-}
-
-func (tx *LexerTx) Dec() {
-	curr := tx
-	for curr != nil {
-		if tx.count > 0 {
-			tx.count--
-		}
-		curr = curr.parent
+		lexer: tx.lexer,
+		count: 0,
 	}
 }
 
 func (tx *LexerTx) Next() Token {
-	tx.Inc()
+	tx.count++
 	return tx.lexer.Next()
 }
 
 func (tx *LexerTx) Back() {
-	tx.Dec()
+	if tx.count > 0 {
+		tx.count--
+	}
 	tx.lexer.Back()
 }
 

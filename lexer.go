@@ -61,9 +61,8 @@ func (l *Lexer) Back() {
 
 func (l *Lexer) Transaction() LexerTx {
 	return LexerTx{
-		lexer:  l,
-		count:  0,
-		parent: nil,
+		lexer: l,
+		count: 0,
 	}
 }
 
