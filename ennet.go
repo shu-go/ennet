@@ -48,6 +48,7 @@ func expand(n *Node) string {
 		}
 
 		b := strings.Builder{}
+		b.Grow(128)
 		curr := n.FirstChild
 		for curr != nil {
 			b.WriteString(expand(curr))
@@ -58,6 +59,7 @@ func expand(n *Node) string {
 
 	case Element:
 		b := strings.Builder{}
+		b.Grow(128)
 		b.WriteString("<" + n.Data)
 		if len(n.Attribute) > 0 {
 			keys := maps.Keys(n.Attribute)
