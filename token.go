@@ -4,29 +4,55 @@ import (
 	"unicode"
 )
 
-type TokenType string
+type TokenType uint8
 
 const (
-	EOF = TokenType("eof")
-	ERR = TokenType("err")
+	EOF TokenType = iota
+	ERR
 
-	CHILD      = TokenType(">")
-	SIBLING    = TokenType("+")
-	CLIMBUP    = TokenType("^")
-	MULT       = TokenType("*")
-	GROUPBEGIN = TokenType("(")
-	GROUPEND   = TokenType(")")
+	CHILD
+	SIBLING
+	CLIMBUP
+	MULT
+	GROUPBEGIN
+	GROUPEND
 
-	ID        = TokenType("#")
-	CLASS     = TokenType(".")
-	ATTRBEGIN = TokenType("[")
-	ATTREND   = TokenType("]")
-	EQ        = TokenType("=")
+	ID
+	CLASS
+	ATTRBEGIN
+	ATTREND
+	EQ
 
-	STRING = TokenType("string")
-	TEXT   = TokenType(`{}`)
-	QTEXT  = TokenType(`""`)
+	STRING
+	TEXT
+	QTEXT
 )
+
+var tokType2String = map[TokenType]string{
+	EOF:        "eof",
+	ERR:        "error",
+	CHILD:      ">",
+	SIBLING:    "+",
+	CLIMBUP:    "^",
+	MULT:       "*",
+	GROUPBEGIN: "(",
+	GROUPEND:   ")",
+	ID:         "#",
+	CLASS:      ".",
+	ATTRBEGIN:  "[",
+	ATTREND:    "]",
+	EQ:         "=",
+	STRING:     "STRING",
+	TEXT:       "TEXT",
+	QTEXT:      "QTEXT",
+}
+
+func (t TokenType) String() string {
+	if s, found := tokType2String[t]; found {
+		return s
+	}
+	return "???"
+}
 
 type Token struct {
 	Type TokenType
@@ -45,7 +71,7 @@ func (t Token) String() string {
 	case QTEXT:
 		return `"` + t.Text + `"`
 	default:
-		return string(t.Type)
+		return t.Type.String()
 	}
 }
 
