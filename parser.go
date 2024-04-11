@@ -44,8 +44,7 @@ func Parse(in io.Reader, listener Listener) (parseError error) {
 		lexer:    NewLexer(in),
 		listener: listener,
 	}
-	tx := p.lexer.Transaction()
-	result := p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation(&tx)
+	result := p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation()
 
 	tok := p.lexer.Next()
 	if tok.Type == ERR {
@@ -74,16 +73,16 @@ func (p *Parser) precheck(t ...TokenType) bool {
 	return false
 }
 
-func (p *Parser) abbreviation(tx *LexerTx) bool {
+func (p *Parser) abbreviation() bool {
 	debug("abbreviation", "TRY", "group")
-	if p.precheck(GROUPBEGIN) && p.group(tx) {
+	if p.precheck(GROUPBEGIN) && p.group() {
 		debug("abbreviation", "group")
 
 	} else {
 		debug("abbreviation", "!group")
 
 		debug("abbreviation", "TRY", "element")
-		if p.precheck( /*tagElement*/ STRING, TEXT) && p.element(tx) {
+		if p.precheck( /*tagElement*/ STRING, TEXT) && p.element() {
 			debug("abbreviation", "element")
 		} else {
 			debug("abbreviation", "!element")
@@ -92,23 +91,23 @@ func (p *Parser) abbreviation(tx *LexerTx) bool {
 	}
 
 	debug("abbreviation", "TRY", "operator")
-	if p.precheck(CHILD, SIBLING /*repeatableOperator*/, CLIMBUP) && p.operator(tx) {
+	if p.precheck(CHILD, SIBLING /*repeatableOperator*/, CLIMBUP) && p.operator() {
 		debug("abbreviation", "operator")
 
 		debug("abbreviation", "TRY", "abbreviation")
-		return p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation(tx)
+		return p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation()
 	}
 
 	return true
 }
 
-func (p *Parser) element(tx *LexerTx) bool {
+func (p *Parser) element() bool {
 	debug("element", "TRY", "tagElement")
-	if p.precheck(STRING) && p.tagElement(tx) {
+	if p.precheck(STRING) && p.tagElement() {
 		debug("element", "tagElement")
 	} else {
 		debug("element", "TRY", "TEXT")
-		tok := tx.Next()
+		tok := p.lexer.Next()
 		if tok.Type != TEXT {
 			return false
 		}
@@ -121,15 +120,15 @@ func (p *Parser) element(tx *LexerTx) bool {
 
 	debug("element", "TRY(maybe)", "multiplication")
 	if p.precheck(MULT) {
-		p.multiplication(tx)
+		p.multiplication()
 	}
 
 	return true
 }
 
-func (p *Parser) tagElement(tx *LexerTx) bool {
+func (p *Parser) tagElement() bool {
 	debug("tagElement", "TRY", "STRING")
-	tok := tx.Next()
+	tok := p.lexer.Next()
 	if tok.Type != STRING {
 		debug("tagElement", "!STRING", tok.Type)
 		return false
@@ -143,19 +142,19 @@ func (p *Parser) tagElement(tx *LexerTx) bool {
 	for {
 		debug("tagElement", "TRY", "id")
 		//debug(p.lexer.Dump())
-		if p.precheck(ID) && p.id(tx) {
+		if p.precheck(ID) && p.id() {
 			debug("tagElement", "id")
 			continue
 		}
 		debug("tagElement", "TRY", "class")
 		//debug(p.lexer.Dump())
-		if p.precheck(CLASS) && p.class(tx) {
+		if p.precheck(CLASS) && p.class() {
 			debug("tagElement", "class")
 			continue
 		}
 		debug("tagElement", "TRY", "attrList")
 		//debug(p.lexer.Dump())
-		if p.precheck(ATTRBEGIN) && p.attrList(tx) {
+		if p.precheck(ATTRBEGIN) && p.attrList() {
 			debug("tagElement", "attrList")
 			continue
 		}
@@ -164,7 +163,7 @@ func (p *Parser) tagElement(tx *LexerTx) bool {
 	}
 
 	debug("tagElement", "TRY", "TEXT")
-	tok = tx.Next()
+	tok = p.lexer.Next()
 	if tok.Type == TEXT {
 		debug("tagElement", "TEXT", tok.String())
 
@@ -173,22 +172,22 @@ func (p *Parser) tagElement(tx *LexerTx) bool {
 		}
 
 	} else {
-		tx.Back()
+		p.lexer.Back()
 	}
 
 	return true
 }
 
-func (p *Parser) id(tx *LexerTx) bool {
+func (p *Parser) id() bool {
 	debug("id", "TRY", "ID")
-	tok := tx.Next()
+	tok := p.lexer.Next()
 	if tok.Type != ID {
 		debug("id", "!ID", tok.Type)
 		return false
 	}
 
 	debug("id", "TRY", "STRING")
-	tok = tx.Next()
+	tok = p.lexer.Next()
 	if tok.Type != STRING {
 		debug("id", "!STRING")
 		panic(errors.New("id name is required"))
@@ -202,16 +201,16 @@ func (p *Parser) id(tx *LexerTx) bool {
 	return true
 }
 
-func (p *Parser) class(tx *LexerTx) bool {
+func (p *Parser) class() bool {
 	debug("class", "TRY", "CLASS")
-	tok := tx.Next()
+	tok := p.lexer.Next()
 	if tok.Type != CLASS {
 		debug("class", "!CLASS", tok.String())
 		return false
 	}
 
 	debug("class", "TRY", "STRING")
-	tok = tx.Next()
+	tok = p.lexer.Next()
 	if tok.Type != STRING {
 		debug("class", "!STRING")
 		panic(errors.New("class name is required"))
@@ -225,9 +224,9 @@ func (p *Parser) class(tx *LexerTx) bool {
 	return true
 }
 
-func (p *Parser) attr(tx *LexerTx) bool {
+func (p *Parser) attr() bool {
 	debug("attr", "TRY", "STRING")
-	tok := tx.Next()
+	tok := p.lexer.Next()
 	if tok.Type != STRING {
 		return false
 	}
@@ -235,9 +234,9 @@ func (p *Parser) attr(tx *LexerTx) bool {
 	attrname := tok.Text
 
 	debug("attr", "TRY", "EQ")
-	tok = tx.Next()
+	tok = p.lexer.Next()
 	if tok.Type != EQ {
-		tx.Back()
+		p.lexer.Back()
 
 		if err := p.listener.Attribute(attrname, ""); err != nil {
 			panic(err)
@@ -247,7 +246,7 @@ func (p *Parser) attr(tx *LexerTx) bool {
 	}
 
 	debug("attr", "TRY", "QTEXT")
-	tok = tx.Next()
+	tok = p.lexer.Next()
 	if tok.Type != QTEXT && tok.Type != STRING {
 		panic(errors.New("attr value is required"))
 		//return false
@@ -260,25 +259,25 @@ func (p *Parser) attr(tx *LexerTx) bool {
 	return true
 }
 
-func (p *Parser) attrList(tx *LexerTx) bool {
+func (p *Parser) attrList() bool {
 	debug("attrList", "TRY", "ATTRBEGIN")
-	tok := tx.Next()
+	tok := p.lexer.Next()
 	if tok.Type != ATTRBEGIN {
 		debug("attrList", "!ATTRBEGIN", tok.String())
 		return false
 	}
 
-	if !p.precheck(STRING) || !p.attr(tx) {
+	if !p.precheck(STRING) || !p.attr() {
 		panic(errors.New("AttrName as a string is required"))
 	}
 
 	for {
-		if !p.precheck(STRING) || !p.attr(tx) {
+		if !p.precheck(STRING) || !p.attr() {
 			break
 		}
 	}
 
-	tok = tx.Next()
+	tok = p.lexer.Next()
 	if tok.Type != ATTREND {
 		panic(errors.New("] is required in the end of attrs"))
 		//return false
@@ -287,18 +286,18 @@ func (p *Parser) attrList(tx *LexerTx) bool {
 	return true
 }
 
-func (p *Parser) group(tx *LexerTx) bool {
-	tok := tx.Next()
+func (p *Parser) group() bool {
+	tok := p.lexer.Next()
 	if tok.Type == GROUPBEGIN {
 		if err := p.listener.GroupBegin(); err != nil {
 			panic(err)
 		}
 
-		if !p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) || !p.abbreviation(tx) {
+		if !p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) || !p.abbreviation() {
 			panic(errors.New("A group or element is required"))
 		}
 
-		tok = tx.Next()
+		tok = p.lexer.Next()
 		if tok.Type != GROUPEND {
 			panic(errors.New(") is required in the end of a group"))
 			//return false
@@ -311,19 +310,19 @@ func (p *Parser) group(tx *LexerTx) bool {
 	}
 
 	if p.precheck(MULT) {
-		p.multiplication(tx)
+		p.multiplication()
 	}
 
 	return true
 }
 
-func (p *Parser) multiplication(tx *LexerTx) bool {
-	tok := tx.Next()
+func (p *Parser) multiplication() bool {
+	tok := p.lexer.Next()
 	if tok.Type != MULT {
 		return false
 	}
 
-	tok = tx.Next()
+	tok = p.lexer.Next()
 	if tok.Type != STRING {
 		panic(errors.New("a number following * is required"))
 		//return false
@@ -341,8 +340,8 @@ func (p *Parser) multiplication(tx *LexerTx) bool {
 	return true
 }
 
-func (p *Parser) operator(tx *LexerTx) bool {
-	tok := tx.Next()
+func (p *Parser) operator() bool {
+	tok := p.lexer.Next()
 	if tok.Type == CHILD {
 		if err := p.listener.OpChild(); err != nil {
 			panic(err)
@@ -356,26 +355,26 @@ func (p *Parser) operator(tx *LexerTx) bool {
 		return true
 
 	} else {
-		tx.Back()
-		if p.precheck(CLIMBUP) && p.repeatableOperator(tx) {
+		p.lexer.Back()
+		if p.precheck(CLIMBUP) && p.repeatableOperator() {
 			return true
 		}
 	}
 	return false
 }
 
-func (p *Parser) repeatableOperator(tx *LexerTx) bool {
+func (p *Parser) repeatableOperator() bool {
 	count := 0
 	debug("rOperator", "TRY", "CLIMBUP")
-	tok := tx.Next()
+	tok := p.lexer.Next()
 	if tok.Type == CLIMBUP {
 		debug("rOperator", "CLIMBUP")
 		for {
 			if tok.Type == CLIMBUP {
 				count++
-				tok = tx.Next()
+				tok = p.lexer.Next()
 			} else {
-				tx.Back()
+				p.lexer.Back()
 				break
 			}
 		}

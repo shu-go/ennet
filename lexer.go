@@ -59,13 +59,6 @@ func (l *Lexer) Back() {
 	l.scanpos--
 }
 
-func (l *Lexer) Transaction() LexerTx {
-	return LexerTx{
-		lexer: l,
-		count: 0,
-	}
-}
-
 func (l *Lexer) scanNext() Token {
 	startpos := l.pos
 
