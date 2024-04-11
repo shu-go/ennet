@@ -45,7 +45,7 @@ func Parse(in io.Reader, listener Listener) (parseError error) {
 		listener: listener,
 	}
 	tx := p.lexer.Transaction()
-	result := p.parse(p.abbreviation, &tx)
+	result := p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation(&tx)
 
 	tok := p.lexer.Next()
 	if tok.Type == ERR {
@@ -60,29 +60,6 @@ func Parse(in io.Reader, listener Listener) (parseError error) {
 	p.lexer.Close()
 
 	return nil
-}
-
-func (p *Parser) parse(f func(tx *LexerTx) bool, tx *LexerTx) bool {
-	txx := tx.Transaction()
-
-	if !f(&txx) {
-		txx.Rollback()
-		//debug(p.lexer.Dump())
-		return false
-	}
-
-	//debug(p.lexer.Dump())
-	return true
-
-}
-
-func (p *Parser) maybeParse(f func(tx *LexerTx) bool, tx *LexerTx) bool {
-	txx := tx.Transaction()
-
-	if !f(&txx) {
-		txx.Rollback()
-	}
-	return true
 }
 
 func (p *Parser) precheck(t ...TokenType) bool {
@@ -115,11 +92,11 @@ func (p *Parser) abbreviation(tx *LexerTx) bool {
 	}
 
 	debug("abbreviation", "TRY", "operator")
-	if p.precheck(CHILD, SIBLING /*repeatableOperator*/, CLIMBUP) && p.parse(p.operator, tx) {
+	if p.precheck(CHILD, SIBLING /*repeatableOperator*/, CLIMBUP) && p.operator(tx) {
 		debug("abbreviation", "operator")
 
 		debug("abbreviation", "TRY", "abbreviation")
-		return p.parse(p.abbreviation, tx)
+		return p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation(tx)
 	}
 
 	return true
@@ -143,7 +120,9 @@ func (p *Parser) element(tx *LexerTx) bool {
 	}
 
 	debug("element", "TRY(maybe)", "multiplication")
-	p.maybeParse(p.multiplication, tx)
+	if p.precheck(MULT) {
+		p.multiplication(tx)
+	}
 
 	return true
 }
@@ -289,12 +268,12 @@ func (p *Parser) attrList(tx *LexerTx) bool {
 		return false
 	}
 
-	if !p.parse(p.attr, tx) {
-		return false
+	if !p.precheck(STRING) || !p.attr(tx) {
+		panic(errors.New("AttrName as a string is required"))
 	}
 
 	for {
-		if !p.parse(p.attr, tx) {
+		if !p.precheck(STRING) || !p.attr(tx) {
 			break
 		}
 	}
@@ -315,8 +294,8 @@ func (p *Parser) group(tx *LexerTx) bool {
 			panic(err)
 		}
 
-		if !p.parse(p.abbreviation, tx) {
-			return false
+		if !p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) || !p.abbreviation(tx) {
+			panic(errors.New("A group or element is required"))
 		}
 
 		tok = tx.Next()
@@ -331,7 +310,9 @@ func (p *Parser) group(tx *LexerTx) bool {
 		return false
 	}
 
-	p.maybeParse(p.multiplication, tx)
+	if p.precheck(MULT) {
+		p.multiplication(tx)
+	}
 
 	return true
 }
