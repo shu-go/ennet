@@ -11,15 +11,16 @@ import (
 func (l *Lexer) Dump() string {
 	return "*lexer dump:\n" +
 		fmt.Sprintf("  %+v\n", l.scanning) +
-		fmt.Sprintf("  %+v\n", l.scanned)
+		fmt.Sprintf("  %+v\n", l.scanpos)
 }
 
 type Lexer struct {
 	in *bufio.Reader
 
-	// in --(scanNext)-> scanning --pop(Next)push-> scanned
-	//                      ^----push(Back)pop--------|
-	scanning, scanned []Token
+	// if len(scanning) == scanpos: next is read from in
+	// else: next is from scannin[scanpos], then scanpos++
+	scanning []Token
+	scanpos  int
 }
 
 func NewLexer(in io.Reader) *Lexer {
@@ -28,7 +29,6 @@ func NewLexer(in io.Reader) *Lexer {
 	return &Lexer{
 		in:       r,
 		scanning: make([]Token, 0, 16),
-		scanned:  make([]Token, 0, 16),
 	}
 }
 
@@ -39,24 +39,22 @@ func (l *Lexer) Close() {
 
 func (l *Lexer) Next() Token {
 	var tok Token
-	if len(l.scanning) == 0 {
+	if l.scanpos == len(l.scanning) {
 		tok = l.scanNext()
-	} else {
-		tok = l.scanning[len(l.scanning)-1]
-		l.scanning = l.scanning[:len(l.scanning)-1]
+		l.scanning = append(l.scanning, tok)
+	} else { // l.scanpos < len(l.scanning)
+		tok = l.scanning[l.scanpos]
 	}
+	l.scanpos++
 
-	l.scanned = append(l.scanned, tok)
 	return tok
 }
 
 func (l *Lexer) Back() {
-	if len(l.scanned) == 0 {
+	if l.scanpos == 0 {
 		return
 	}
-	tok := l.scanned[len(l.scanned)-1]
-	l.scanned = l.scanned[:len(l.scanned)-1]
-	l.scanning = append(l.scanning, tok)
+	l.scanpos--
 }
 
 func (l *Lexer) Transaction() LexerTx {
