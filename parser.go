@@ -49,9 +49,9 @@ func Parse(in io.Reader, listener Listener) (parseError error) {
 
 	tok := p.lexer.Next()
 	if tok.Type == ERR {
-		return errors.New("parsing failed because of " + tok.String())
+		return errors.New("parsing failed because of " + tok.String() + strconv.Itoa(tok.Pos))
 	} else if tok.Type != EOF {
-		return errors.New("parsing failed because of extra " + tok.String())
+		return errors.New("parsing failed because of extra " + tok.String() + strconv.Itoa(tok.Pos))
 	}
 	if !result {
 		return errors.New("parse error")

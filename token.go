@@ -1,6 +1,8 @@
 package ennet
 
-import "unicode"
+import (
+	"unicode"
+)
 
 type TokenType string
 
@@ -29,6 +31,7 @@ const (
 type Token struct {
 	Type TokenType
 	Text string
+	Pos  int
 }
 
 func (t Token) String() string {

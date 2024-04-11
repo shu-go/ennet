@@ -475,25 +475,25 @@ func TestLexerError(t *testing.T) {
 	t.Run("EOF", func(t *testing.T) {
 		l := input("")
 		tok := l.Next()
-		gotwant.Test(t, tok, ennet.Token{Type: ennet.EOF})
+		gotwant.Test(t, tok, ennet.Token{Type: ennet.EOF, Pos: 1})
 	})
 
 	t.Run("ERR Suddon EOF", func(t *testing.T) {
 		l := input(`{a`)
 		tok := l.Next()
-		gotwant.Test(t, tok, ennet.Token{Type: ennet.ERR, Text: "sudden EOF"})
+		gotwant.Test(t, tok, ennet.Token{Type: ennet.ERR, Text: "sudden EOF", Pos: 3})
 
 		l = input(`"a`)
 		tok = l.Next()
-		gotwant.Test(t, tok, ennet.Token{Type: ennet.ERR, Text: "sudden EOF"})
+		gotwant.Test(t, tok, ennet.Token{Type: ennet.ERR, Text: "sudden EOF", Pos: 3})
 
 		// no ERR
 		l = input(`[a`)
 		tok = l.Next()
-		gotwant.Test(t, tok, ennet.Token{Type: ennet.ATTRBEGIN, Text: ""})
+		gotwant.Test(t, tok, ennet.Token{Type: ennet.ATTRBEGIN, Text: "", Pos: 1})
 		tok = l.Next()
-		gotwant.Test(t, tok, ennet.Token{Type: ennet.STRING, Text: "a"})
+		gotwant.Test(t, tok, ennet.Token{Type: ennet.STRING, Text: "a", Pos: 2})
 		tok = l.Next()
-		gotwant.Test(t, tok, ennet.Token{Type: ennet.EOF, Text: ""})
+		gotwant.Test(t, tok, ennet.Token{Type: ennet.EOF, Text: "", Pos: 3})
 	})
 }

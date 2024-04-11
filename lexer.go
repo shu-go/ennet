@@ -15,7 +15,8 @@ func (l *Lexer) Dump() string {
 }
 
 type Lexer struct {
-	in *bufio.Reader
+	in  *bufio.Reader
+	pos int
 
 	// if len(scanning) == scanpos: next is read from in
 	// else: next is from scannin[scanpos], then scanpos++
@@ -28,6 +29,7 @@ func NewLexer(in io.Reader) *Lexer {
 	r.Reset(in)
 	return &Lexer{
 		in:       r,
+		pos:      1,
 		scanning: make([]Token, 0, 16),
 	}
 }
@@ -65,72 +67,88 @@ func (l *Lexer) Transaction() LexerTx {
 }
 
 func (l *Lexer) scanNext() Token {
+	startpos := l.pos
+
 	r, sz, err := l.in.ReadRune()
 	if sz == 0 && err != nil {
 		return Token{
 			Type: EOF,
+			Pos:  l.pos,
 		}
 	} else if err != nil && err != io.EOF {
 		return Token{
 			Type: ERR,
 			Text: err.Error(),
+			Pos:  l.pos,
 		}
 	}
+	l.pos++
 
 	switch r {
 	case '>':
 		return Token{
 			Type: CHILD,
+			Pos:  startpos,
 		}
 
 	case '+':
 		return Token{
 			Type: SIBLING,
+			Pos:  startpos,
 		}
 
 	case '^':
 		return Token{
 			Type: CLIMBUP,
+			Pos:  startpos,
 		}
 
 	case '*':
 		return Token{
 			Type: MULT,
+			Pos:  startpos,
 		}
 
 	case '(':
 		return Token{
 			Type: GROUPBEGIN,
+			Pos:  startpos,
 		}
 
 	case ')':
 		return Token{
 			Type: GROUPEND,
+			Pos:  startpos,
 		}
 
 	case '#':
 		return Token{
 			Type: ID,
+			Pos:  startpos,
 		}
 
 	case '.':
 		return Token{
 			Type: CLASS,
+			Pos:  startpos,
 		}
 
 	case '[':
 		return Token{
 			Type: ATTRBEGIN,
+			Pos:  startpos,
 		}
 
 	case ']':
 		return Token{
 			Type: ATTREND,
+			Pos:  startpos,
 		}
 
 	case '=':
 		return Token{
 			Type: EQ,
+			Pos:  startpos,
 		}
 
 	case '\'', '"':
@@ -142,18 +160,21 @@ func (l *Lexer) scanNext() Token {
 				return Token{
 					Type: ERR,
 					Text: "sudden EOF",
+					Pos:  l.pos,
 				}
 			} else if err != nil {
 				return Token{
 					Type: ERR,
 					Text: err.Error(),
+					Pos:  l.pos,
 				}
 			}
+			l.pos++
 
 			if r == quot {
-
 				rr, sz, _ := l.in.ReadRune()
 				if rr == quot {
+					l.pos++
 					text = append(text, r)
 				} else if sz == 0 {
 					break
@@ -169,6 +190,7 @@ func (l *Lexer) scanNext() Token {
 		return Token{
 			Type: QTEXT,
 			Text: string(text),
+			Pos:  startpos,
 		}
 
 	case '{':
@@ -179,18 +201,21 @@ func (l *Lexer) scanNext() Token {
 				return Token{
 					Type: ERR,
 					Text: "sudden EOF",
+					Pos:  l.pos,
 				}
 			} else if err != nil {
 				return Token{
 					Type: ERR,
 					Text: err.Error(),
+					Pos:  l.pos,
 				}
 			}
+			l.pos++
 
 			if r == '}' {
-
 				rr, sz, _ := l.in.ReadRune()
 				if rr == '}' {
+					l.pos++
 					text = append(text, r)
 				} else if sz == 0 {
 					break
@@ -206,12 +231,13 @@ func (l *Lexer) scanNext() Token {
 		return Token{
 			Type: TEXT,
 			Text: string(text),
+			Pos:  startpos,
 		}
 
 	default:
 		if unicode.IsSpace(r) {
 			//fmt.Fprintf(os.Stderr, "skipping ... %q\n", string(r))
-			l.skipSpace(r)
+			l.pos += l.skipSpace(r)
 			return l.scanNext()
 		}
 
@@ -223,42 +249,50 @@ func (l *Lexer) scanNext() Token {
 				return Token{
 					Type: STRING,
 					Text: string(id),
+					Pos:  startpos,
 				}
 			} else if err != nil {
 				return Token{
 					Type: ERR,
 					Text: err.Error(),
+					Pos:  l.pos,
 				}
 			}
+			l.pos++
 
 			if isSTRING(r) {
 				id = append(id, r)
 			} else {
 				l.in.UnreadRune()
+				l.pos--
 				return Token{
 					Type: STRING,
 					Text: string(id),
+					Pos:  startpos,
 				}
 			}
 		}
 	}
 }
 
-func (l *Lexer) skipSpace(initr rune) {
+func (l *Lexer) skipSpace(initr rune) int {
+	posdelta := 0
 	if unicode.IsSpace(initr) {
 		for {
 			r, sz, _ := l.in.ReadRune()
 			if sz == 0 {
-				return
+				return posdelta
 			}
 
 			//fmt.Fprintf(os.Stderr, "    next ... %q\n", string(r))
 			if !unicode.IsSpace(r) {
 				l.in.UnreadRune()
-				return
+				return posdelta
 			}
+			posdelta++
 		}
 	}
+	return posdelta
 }
 
 var readerPool = sync.Pool{
