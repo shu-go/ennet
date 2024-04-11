@@ -99,14 +99,14 @@ func (p *Parser) precheck(t ...TokenType) bool {
 
 func (p *Parser) abbreviation(tx *LexerTx) bool {
 	debug("abbreviation", "TRY", "group")
-	if p.precheck(GROUPBEGIN) && p.parse(p.group, tx) {
+	if p.precheck(GROUPBEGIN) && p.group(tx) {
 		debug("abbreviation", "group")
 
 	} else {
 		debug("abbreviation", "!group")
 
 		debug("abbreviation", "TRY", "element")
-		if p.precheck( /*tagElement*/ STRING, TEXT) && p.parse(p.element, tx) {
+		if p.precheck( /*tagElement*/ STRING, TEXT) && p.element(tx) {
 			debug("abbreviation", "element")
 		} else {
 			debug("abbreviation", "!element")
@@ -127,7 +127,7 @@ func (p *Parser) abbreviation(tx *LexerTx) bool {
 
 func (p *Parser) element(tx *LexerTx) bool {
 	debug("element", "TRY", "tagElement")
-	if p.precheck(STRING) && p.parse(p.tagElement, tx) {
+	if p.precheck(STRING) && p.tagElement(tx) {
 		debug("element", "tagElement")
 	} else {
 		debug("element", "TRY", "TEXT")
@@ -164,19 +164,19 @@ func (p *Parser) tagElement(tx *LexerTx) bool {
 	for {
 		debug("tagElement", "TRY", "id")
 		//debug(p.lexer.Dump())
-		if p.precheck(ID) && p.parse(p.id, tx) {
+		if p.precheck(ID) && p.id(tx) {
 			debug("tagElement", "id")
 			continue
 		}
 		debug("tagElement", "TRY", "class")
 		//debug(p.lexer.Dump())
-		if p.precheck(CLASS) && p.parse(p.class, tx) {
+		if p.precheck(CLASS) && p.class(tx) {
 			debug("tagElement", "class")
 			continue
 		}
 		debug("tagElement", "TRY", "attrList")
 		//debug(p.lexer.Dump())
-		if p.precheck(ATTRBEGIN) && p.parse(p.attrList, tx) {
+		if p.precheck(ATTRBEGIN) && p.attrList(tx) {
 			debug("tagElement", "attrList")
 			continue
 		}
@@ -376,7 +376,7 @@ func (p *Parser) operator(tx *LexerTx) bool {
 
 	} else {
 		tx.Back()
-		if p.precheck(CLIMBUP) && p.parse(p.repeatableOperator, tx) {
+		if p.precheck(CLIMBUP) && p.repeatableOperator(tx) {
 			return true
 		}
 	}
