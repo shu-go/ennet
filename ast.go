@@ -9,16 +9,31 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type NodeType string
+type NodeType uint8
 
 const (
-	Root = NodeType("ROOT")
-	WIP  = NodeType("WIP")
+	Root NodeType = iota
+	WIP
 
-	Element = NodeType("element")
-	Text    = NodeType("text")
-	Group   = NodeType("group")
+	Element
+	Text
+	Group
 )
+
+var nodeType2String = map[NodeType]string{
+	Root:    "ROOT",
+	WIP:     "WIP",
+	Element: "element",
+	Text:    "text",
+	Group:   "group",
+}
+
+func (t NodeType) String() string {
+	if s, found := nodeType2String[t]; found {
+		return s
+	}
+	return "???"
+}
 
 type Node struct {
 	Type      NodeType
@@ -51,7 +66,7 @@ func (n *Node) Dump() string {
 func (n *Node) dump(indent int) string {
 	s := strings.Repeat(" ", indent*2)
 	if n.Type == Element || n.Type == Group {
-		s += n.Data + ":" + string(n.Type)
+		s += n.Data + ":" + n.Type.String()
 	} else if n.Type == Text {
 		s += `"` + n.Data + `"`
 	}
