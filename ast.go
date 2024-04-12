@@ -149,138 +149,138 @@ func NewNodeBuilder(opts ...NodeBuilderOption) NodeBuilder {
 	return b
 }
 
-func (nl *NodeBuilder) Element(name string) error {
-	if nl.curr.Type == WIP {
-		nl.curr.Type = Element
-		nl.curr.Data = name
+func (nb *NodeBuilder) Element(name string) error {
+	if nb.curr.Type == WIP {
+		nb.curr.Type = Element
+		nb.curr.Data = name
 	}
 
 	return nil
 }
 
-func (nl *NodeBuilder) Attribute(name, value string) error {
-	if nl.curr.Type == Text {
+func (nb *NodeBuilder) Attribute(name, value string) error {
+	if nb.curr.Type == Text {
 		return errors.New("attribute of Text")
 	}
-	if nl.curr.FirstChild != nil && nl.curr.FirstChild.Type == Text {
+	if nb.curr.FirstChild != nil && nb.curr.FirstChild.Type == Text {
 		return errors.New("attribute must appear before Text")
 	}
 
-	if nl.curr.Type == WIP {
-		nl.curr.Type = Element
+	if nb.curr.Type == WIP {
+		nb.curr.Type = Element
 	}
 
-	if nl.curr.Attribute == nil {
-		nl.curr.Attribute = make(map[string]string)
+	if nb.curr.Attribute == nil {
+		nb.curr.Attribute = make(map[string]string)
 	}
 
-	if v, found := nl.curr.Attribute[name]; found {
-		nl.curr.Attribute[name] = v + " " + value
+	if v, found := nb.curr.Attribute[name]; found {
+		nb.curr.Attribute[name] = v + " " + value
 	} else {
-		nl.curr.Attribute[name] = value
+		nb.curr.Attribute[name] = value
 	}
 
 	return nil
 }
 
-func (nl *NodeBuilder) ID(name string) error {
-	return nl.Attribute("id", name)
+func (nb *NodeBuilder) ID(name string) error {
+	return nb.Attribute("id", name)
 }
 
-func (nl *NodeBuilder) Class(name string) error {
-	return nl.Attribute("class", name)
+func (nb *NodeBuilder) Class(name string) error {
+	return nb.Attribute("class", name)
 }
 
-func (nl *NodeBuilder) Mul(count int) error {
-	nl.curr.Mul = count
+func (nb *NodeBuilder) Mul(count int) error {
+	nb.curr.Mul = count
 
 	return nil
 }
 
-func (nl *NodeBuilder) Text(text string) error {
-	if nl.curr.Type == Text {
-		nl.curr.Data += text
+func (nb *NodeBuilder) Text(text string) error {
+	if nb.curr.Type == Text {
+		nb.curr.Data += text
 		return nil
 	}
 
-	if nl.curr.Type == WIP {
-		nl.curr.Type = Text
-		nl.curr.Data += text
+	if nb.curr.Type == WIP {
+		nb.curr.Type = Text
+		nb.curr.Data += text
 		return nil
 	}
 
-	node := nl.NewNode()
+	node := nb.NewNode()
 	node.Type = Text
 	node.Data = text
-	nl.curr.AppendChild(node)
+	nb.curr.AppendChild(node)
 
 	return nil
 }
 
-func (nl *NodeBuilder) GroupBegin() error {
-	if nl.curr.Type == WIP {
-		nl.curr.Type = Group
-		node := nl.NewNode()
+func (nb *NodeBuilder) GroupBegin() error {
+	if nb.curr.Type == WIP {
+		nb.curr.Type = Group
+		node := nb.NewNode()
 		node.Type = WIP
-		nl.curr.AppendChild(node)
-		nl.curr = node
+		nb.curr.AppendChild(node)
+		nb.curr = node
 	} else {
-		node := nl.NewNode()
+		node := nb.NewNode()
 		node.Type = Group
-		nl.curr.AppendChild(node)
-		nl.curr = node
+		nb.curr.AppendChild(node)
+		nb.curr = node
 	}
 
 	return nil
 }
 
-func (nl *NodeBuilder) GroupEnd() error {
-	if nl.curr.Parent != nil && nl.curr.Parent.Type != Root {
-		nl.curr = nl.curr.Parent
+func (nb *NodeBuilder) GroupEnd() error {
+	if nb.curr.Parent != nil && nb.curr.Parent.Type != Root {
+		nb.curr = nb.curr.Parent
 	}
 
 	for {
-		if nl.curr.Parent == nil ||
-			nl.curr.Parent.Type == Root ||
-			nl.curr.Type == Group {
+		if nb.curr.Parent == nil ||
+			nb.curr.Parent.Type == Root ||
+			nb.curr.Type == Group {
 			break
 		}
-		nl.curr = nl.curr.Parent
+		nb.curr = nb.curr.Parent
 	}
 
 	return nil
 }
 
-func (nl *NodeBuilder) OpChild() error {
-	node := nl.NewNode()
+func (nb *NodeBuilder) OpChild() error {
+	node := nb.NewNode()
 	node.Type = WIP
-	nl.curr.AppendChild(node)
-	nl.curr = node
+	nb.curr.AppendChild(node)
+	nb.curr = node
 
 	return nil
 }
 
-func (nl *NodeBuilder) OpSibling() error {
-	node := nl.NewNode()
+func (nb *NodeBuilder) OpSibling() error {
+	node := nb.NewNode()
 	node.Type = WIP
-	nl.curr.Parent.AppendChild(node)
-	nl.curr = node
+	nb.curr.Parent.AppendChild(node)
+	nb.curr = node
 
 	return nil
 }
 
-func (nl *NodeBuilder) OpClimbup(count int) error {
+func (nb *NodeBuilder) OpClimbup(count int) error {
 	for i := 0; i < count; i++ {
-		if nl.curr.Parent == nil || nl.curr.Parent.Type == Root {
+		if nb.curr.Parent == nil || nb.curr.Parent.Type == Root {
 			break
 		}
-		nl.curr = nl.curr.Parent
+		nb.curr = nb.curr.Parent
 	}
 
-	node := nl.NewNode()
+	node := nb.NewNode()
 	node.Type = WIP
-	nl.curr.Parent.AppendChild(node)
-	nl.curr = node
+	nb.curr.Parent.AppendChild(node)
+	nb.curr = node
 
 	return nil
 }
