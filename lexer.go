@@ -59,6 +59,18 @@ func (l *Lexer) Back() {
 	l.scanpos--
 }
 
+func (l *Lexer) Peek() Token {
+	var tok Token
+	if l.scanpos == len(l.scanning) {
+		tok = l.scanNext()
+		l.scanning = append(l.scanning, tok)
+	} else { // l.scanpos < len(l.scanning)
+		tok = l.scanning[l.scanpos]
+	}
+
+	return tok
+}
+
 func (l *Lexer) scanNext() Token {
 	startpos := l.pos
 

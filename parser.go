@@ -62,11 +62,10 @@ func Parse(in io.Reader, listener Listener) (parseError error) {
 }
 
 func (p *Parser) precheck(t ...TokenType) bool {
-	tok := p.lexer.Next()
-	p.lexer.Back()
+	tok := p.lexer.Peek()
 
-	for _, tt := range t {
-		if tok.Type == tt {
+	for i := 0; i < len(t); i++ {
+		if tok.Type == t[i] {
 			return true
 		}
 	}
