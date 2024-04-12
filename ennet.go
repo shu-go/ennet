@@ -25,15 +25,31 @@ func Expand(s string) (string, error) {
 	b.Reset()
 	b.WriteString(s)
 
-	nl := NewNodeBuilder()
+	nl := NewNodeBuilder(WithPool(&nodePool))
 	err := Parse(b, &nl)
 	if err != nil {
 		return "", err
 	}
 
 	result := expand(nl.Root)
+
+	gcNodes(&nl, &nodePool, nl.Root)
+
 	expandBufPool.Put(b)
 	return result, nil
+}
+
+func gcNodes(nb *NodeBuilder, pool *sync.Pool, n *Node) {
+	if pool == nil {
+		return
+	}
+
+	c := n.FirstChild
+	for c != nil {
+		gcNodes(nb, pool, c)
+		c = c.NextSibling
+	}
+	pool.Put(n)
 }
 
 func expand(n *Node) string {

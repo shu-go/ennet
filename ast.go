@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"golang.org/x/exp/maps"
 )
@@ -110,14 +111,42 @@ type Builder interface {
 type NodeBuilder struct {
 	Root *Node
 	curr *Node
+
+	pool *sync.Pool
 }
 
-func NewNodeBuilder() NodeBuilder {
-	root := &Node{Type: Root}
-	return NodeBuilder{
-		Root: root,
-		curr: root.AppendChild(&Node{Type: WIP}),
+func (b *NodeBuilder) NewNode() *Node {
+	if b.pool != nil {
+		n := b.pool.Get().(*Node)
+		*n = Node{}
+		return n
 	}
+	return &Node{}
+}
+
+type NodeBuilderOption func(*NodeBuilder)
+
+func WithPool(pool *sync.Pool) func(*NodeBuilder) {
+	return func(b *NodeBuilder) {
+		b.pool = pool
+	}
+}
+
+func NewNodeBuilder(opts ...NodeBuilderOption) NodeBuilder {
+	var b NodeBuilder
+	for i := 0; i < len(opts); i++ {
+		opts[i](&b)
+	}
+
+	root := b.NewNode()
+	root.Type = Root
+
+	b.Root = root
+	b.curr = b.NewNode()
+	b.curr.Type = WIP
+	b.curr = root.AppendChild(b.curr)
+
+	return b
 }
 
 func (nl *NodeBuilder) Element(name string) error {
@@ -180,10 +209,9 @@ func (nl *NodeBuilder) Text(text string) error {
 		return nil
 	}
 
-	node := &Node{
-		Type: Text,
-		Data: text,
-	}
+	node := nl.NewNode()
+	node.Type = Text
+	node.Data = text
 	nl.curr.AppendChild(node)
 
 	return nil
@@ -192,13 +220,13 @@ func (nl *NodeBuilder) Text(text string) error {
 func (nl *NodeBuilder) GroupBegin() error {
 	if nl.curr.Type == WIP {
 		nl.curr.Type = Group
-		node := &Node{Type: WIP}
+		node := nl.NewNode()
+		node.Type = WIP
 		nl.curr.AppendChild(node)
 		nl.curr = node
 	} else {
-		node := &Node{
-			Type: Group,
-		}
+		node := nl.NewNode()
+		node.Type = Group
 		nl.curr.AppendChild(node)
 		nl.curr = node
 	}
@@ -224,7 +252,8 @@ func (nl *NodeBuilder) GroupEnd() error {
 }
 
 func (nl *NodeBuilder) OpChild() error {
-	node := &Node{Type: WIP}
+	node := nl.NewNode()
+	node.Type = WIP
 	nl.curr.AppendChild(node)
 	nl.curr = node
 
@@ -232,7 +261,8 @@ func (nl *NodeBuilder) OpChild() error {
 }
 
 func (nl *NodeBuilder) OpSibling() error {
-	node := &Node{Type: WIP}
+	node := nl.NewNode()
+	node.Type = WIP
 	nl.curr.Parent.AppendChild(node)
 	nl.curr = node
 
@@ -247,7 +277,8 @@ func (nl *NodeBuilder) OpClimbup(count int) error {
 		nl.curr = nl.curr.Parent
 	}
 
-	node := &Node{Type: WIP}
+	node := nl.NewNode()
+	node.Type = WIP
 	nl.curr.Parent.AppendChild(node)
 	nl.curr = node
 
