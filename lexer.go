@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"unicode"
 )
 
 func (l *Lexer) Dump() string {
@@ -74,8 +73,8 @@ func (l *Lexer) Peek() Token {
 func (l *Lexer) scanNext() Token {
 	startpos := l.pos
 
-	r, sz, err := l.in.ReadRune()
-	if sz == 0 && err != nil {
+	c, err := l.in.ReadByte()
+	if err == io.EOF {
 		return Token{
 			Type: EOF,
 			Pos:  l.pos,
@@ -89,7 +88,7 @@ func (l *Lexer) scanNext() Token {
 	}
 	l.pos++
 
-	switch r {
+	switch c {
 	case '>':
 		return Token{
 			Type: CHILD,
@@ -157,11 +156,11 @@ func (l *Lexer) scanNext() Token {
 		}
 
 	case '\'', '"':
-		quot := r
-		text := []rune{}
+		quot := c
+		text := []byte{}
 		for {
-			r, sz, err = l.in.ReadRune()
-			if sz == 0 {
+			c, err = l.in.ReadByte()
+			if err == io.EOF {
 				return Token{
 					Type: ERR,
 					Text: "sudden EOF",
@@ -176,19 +175,26 @@ func (l *Lexer) scanNext() Token {
 			}
 			l.pos++
 
-			if r == quot {
-				rr, sz, _ := l.in.ReadRune()
-				if rr == quot {
+			if c == quot {
+				cc, err := l.in.ReadByte()
+				if err != nil && err != io.EOF {
+					return Token{
+						Type: ERR,
+						Text: err.Error(),
+						Pos:  l.pos,
+					}
+				}
+				if cc == quot {
 					l.pos++
-					text = append(text, r)
-				} else if sz == 0 {
+					text = append(text, c)
+				} else if err != nil && err == io.EOF {
 					break
 				} else {
-					l.in.UnreadRune()
+					l.in.UnreadByte()
 					break
 				}
 			} else {
-				text = append(text, r)
+				text = append(text, c)
 			}
 		}
 
@@ -199,10 +205,10 @@ func (l *Lexer) scanNext() Token {
 		}
 
 	case '{':
-		text := []rune{}
+		text := []byte{}
 		for {
-			r, sz, err = l.in.ReadRune()
-			if sz == 0 {
+			c, err = l.in.ReadByte()
+			if err != nil && err == io.EOF {
 				return Token{
 					Type: ERR,
 					Text: "sudden EOF",
@@ -217,19 +223,19 @@ func (l *Lexer) scanNext() Token {
 			}
 			l.pos++
 
-			if r == '}' {
-				rr, sz, _ := l.in.ReadRune()
+			if c == '}' {
+				rr, err := l.in.ReadByte()
 				if rr == '}' {
 					l.pos++
-					text = append(text, r)
-				} else if sz == 0 {
+					text = append(text, c)
+				} else if err != nil && err == io.EOF {
 					break
 				} else {
-					l.in.UnreadRune()
+					l.in.UnreadByte()
 					break
 				}
 			} else {
-				text = append(text, r)
+				text = append(text, c)
 			}
 		}
 
@@ -240,17 +246,17 @@ func (l *Lexer) scanNext() Token {
 		}
 
 	default:
-		if unicode.IsSpace(r) {
+		if isSpace(c) {
 			//fmt.Fprintf(os.Stderr, "skipping ... %q\n", string(r))
-			l.pos += l.skipSpace(r)
+			l.pos += l.skipSpace(c)
 			return l.scanNext()
 		}
 
 		// STRING
-		id := []rune{r}
+		id := []byte{c}
 		for {
-			r, sz, err = l.in.ReadRune()
-			if sz == 0 {
+			c, err = l.in.ReadByte()
+			if err != nil && err == io.EOF {
 				return Token{
 					Type: STRING,
 					Text: string(id),
@@ -265,10 +271,10 @@ func (l *Lexer) scanNext() Token {
 			}
 			l.pos++
 
-			if isSTRING(r) {
-				id = append(id, r)
+			if isSTRING(c) {
+				id = append(id, c)
 			} else {
-				l.in.UnreadRune()
+				l.in.UnreadByte()
 				l.pos--
 				return Token{
 					Type: STRING,
@@ -280,18 +286,18 @@ func (l *Lexer) scanNext() Token {
 	}
 }
 
-func (l *Lexer) skipSpace(initr rune) int {
+func (l *Lexer) skipSpace(initr byte) int {
 	posdelta := 0
-	if unicode.IsSpace(initr) {
+	if isSpace(initr) {
 		for {
-			r, sz, _ := l.in.ReadRune()
-			if sz == 0 {
+			r, err := l.in.ReadByte()
+			if err != nil && err == io.EOF {
 				return posdelta
 			}
 
 			//fmt.Fprintf(os.Stderr, "    next ... %q\n", string(r))
-			if !unicode.IsSpace(r) {
-				l.in.UnreadRune()
+			if !isSpace(r) {
+				l.in.UnreadByte()
 				return posdelta
 			}
 			posdelta++

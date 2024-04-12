@@ -1,9 +1,5 @@
 package ennet
 
-import (
-	"unicode"
-)
-
 type TokenType uint8
 
 const (
@@ -75,11 +71,15 @@ func (t Token) String() string {
 	}
 }
 
-func isSTRING(r rune) bool {
-	switch r {
+func isSTRING(b byte) bool {
+	switch b {
 	case '>', '+', '^', '*', '(', ')', '#', '.', '[', ']', '=', '{', '}':
 		return false
 	default:
-		return !unicode.IsSpace(r)
+		return !isSpace(b)
 	}
+}
+
+func isSpace(b byte) bool {
+	return b == ' ' || b == '\t' || b == '\r' || b == '\n'
 }
