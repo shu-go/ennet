@@ -91,7 +91,7 @@ func (n *Node) dump(indent int) string {
 	return s
 }
 
-type Listener interface {
+type Builder interface {
 	Element(name string) error
 	ID(name string) error
 	Class(name string) error
@@ -107,20 +107,20 @@ type Listener interface {
 	GroupEnd() error
 }
 
-type NodeListener struct {
+type NodeBuilder struct {
 	Root *Node
 	curr *Node
 }
 
-func NewNodeListener() NodeListener {
+func NewNodeBuilder() NodeBuilder {
 	root := &Node{Type: Root}
-	return NodeListener{
+	return NodeBuilder{
 		Root: root,
 		curr: root.AppendChild(&Node{Type: WIP}),
 	}
 }
 
-func (nl *NodeListener) Element(name string) error {
+func (nl *NodeBuilder) Element(name string) error {
 	if nl.curr.Type == WIP {
 		nl.curr.Type = Element
 		nl.curr.Data = name
@@ -129,7 +129,7 @@ func (nl *NodeListener) Element(name string) error {
 	return nil
 }
 
-func (nl *NodeListener) Attribute(name, value string) error {
+func (nl *NodeBuilder) Attribute(name, value string) error {
 	if nl.curr.Type == Text {
 		return errors.New("attribute of Text")
 	}
@@ -154,21 +154,21 @@ func (nl *NodeListener) Attribute(name, value string) error {
 	return nil
 }
 
-func (nl *NodeListener) ID(name string) error {
+func (nl *NodeBuilder) ID(name string) error {
 	return nl.Attribute("id", name)
 }
 
-func (nl *NodeListener) Class(name string) error {
+func (nl *NodeBuilder) Class(name string) error {
 	return nl.Attribute("class", name)
 }
 
-func (nl *NodeListener) Mul(count int) error {
+func (nl *NodeBuilder) Mul(count int) error {
 	nl.curr.Mul = count
 
 	return nil
 }
 
-func (nl *NodeListener) Text(text string) error {
+func (nl *NodeBuilder) Text(text string) error {
 	if nl.curr.Type == Text {
 		nl.curr.Data += text
 		return nil
@@ -189,7 +189,7 @@ func (nl *NodeListener) Text(text string) error {
 	return nil
 }
 
-func (nl *NodeListener) GroupBegin() error {
+func (nl *NodeBuilder) GroupBegin() error {
 	if nl.curr.Type == WIP {
 		nl.curr.Type = Group
 		node := &Node{Type: WIP}
@@ -206,7 +206,7 @@ func (nl *NodeListener) GroupBegin() error {
 	return nil
 }
 
-func (nl *NodeListener) GroupEnd() error {
+func (nl *NodeBuilder) GroupEnd() error {
 	if nl.curr.Parent != nil && nl.curr.Parent.Type != Root {
 		nl.curr = nl.curr.Parent
 	}
@@ -223,7 +223,7 @@ func (nl *NodeListener) GroupEnd() error {
 	return nil
 }
 
-func (nl *NodeListener) OpChild() error {
+func (nl *NodeBuilder) OpChild() error {
 	node := &Node{Type: WIP}
 	nl.curr.AppendChild(node)
 	nl.curr = node
@@ -231,7 +231,7 @@ func (nl *NodeListener) OpChild() error {
 	return nil
 }
 
-func (nl *NodeListener) OpSibling() error {
+func (nl *NodeBuilder) OpSibling() error {
 	node := &Node{Type: WIP}
 	nl.curr.Parent.AppendChild(node)
 	nl.curr = node
@@ -239,7 +239,7 @@ func (nl *NodeListener) OpSibling() error {
 	return nil
 }
 
-func (nl *NodeListener) OpClimbup(count int) error {
+func (nl *NodeBuilder) OpClimbup(count int) error {
 	for i := 0; i < count; i++ {
 		if nl.curr.Parent == nil || nl.curr.Parent.Type == Root {
 			break

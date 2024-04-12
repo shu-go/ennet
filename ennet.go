@@ -25,7 +25,7 @@ func Expand(s string) (string, error) {
 	b.Reset()
 	b.WriteString(s)
 
-	nl := NewNodeListener()
+	nl := NewNodeBuilder()
 	err := Parse(b, &nl)
 	if err != nil {
 		return "", err
@@ -132,5 +132,11 @@ func debug(a ...any) {
 var expandBufPool = sync.Pool{
 	New: func() any {
 		return &bytes.Buffer{}
+	},
+}
+
+var nodePool = sync.Pool{
+	New: func() any {
+		return &Node{}
 	},
 }

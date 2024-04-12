@@ -27,11 +27,11 @@ EBNF:
 	abbreviation = (group | element), [operator, abbreviation]
 */
 type Parser struct {
-	lexer    *Lexer
-	listener Listener
+	lexer   *Lexer
+	builder Builder
 }
 
-func Parse(in io.Reader, listener Listener) (parseError error) {
+func Parse(in io.Reader, builder Builder) (parseError error) {
 	defer func() {
 		if err, ok := recover().(error); ok {
 			parseError = err
@@ -41,8 +41,8 @@ func Parse(in io.Reader, listener Listener) (parseError error) {
 	}()
 
 	p := Parser{
-		lexer:    NewLexer(in),
-		listener: listener,
+		lexer:   NewLexer(in),
+		builder: builder,
 	}
 	result := p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation()
 
@@ -99,7 +99,7 @@ func (p *Parser) element() bool {
 			return false
 		}
 
-		if err := p.listener.Text(tok.Text); err != nil {
+		if err := p.builder.Text(tok.Text); err != nil {
 			panic(err)
 		}
 	}
@@ -117,7 +117,7 @@ func (p *Parser) tagElement() bool {
 		return false
 	}
 
-	if err := p.listener.Element(tok.Text); err != nil {
+	if err := p.builder.Element(tok.Text); err != nil {
 		panic(err)
 	}
 
@@ -136,7 +136,7 @@ func (p *Parser) tagElement() bool {
 
 	tok = p.lexer.Next()
 	if tok.Type == TEXT {
-		if err := p.listener.Text(tok.Text); err != nil {
+		if err := p.builder.Text(tok.Text); err != nil {
 			panic(err)
 		}
 
@@ -158,7 +158,7 @@ func (p *Parser) id() bool {
 		panic(errors.New("id name is required"))
 	}
 
-	if err := p.listener.ID(tok.Text); err != nil {
+	if err := p.builder.ID(tok.Text); err != nil {
 		panic(err)
 	}
 
@@ -176,7 +176,7 @@ func (p *Parser) class() bool {
 		panic(errors.New("class name is required"))
 	}
 
-	if err := p.listener.Class(tok.Text); err != nil {
+	if err := p.builder.Class(tok.Text); err != nil {
 		panic(err)
 	}
 
@@ -195,7 +195,7 @@ func (p *Parser) attr() bool {
 	if tok.Type != EQ {
 		p.lexer.Back()
 
-		if err := p.listener.Attribute(attrname, ""); err != nil {
+		if err := p.builder.Attribute(attrname, ""); err != nil {
 			panic(err)
 		}
 
@@ -208,7 +208,7 @@ func (p *Parser) attr() bool {
 		//return false
 	}
 
-	if err := p.listener.Attribute(attrname, tok.Text); err != nil {
+	if err := p.builder.Attribute(attrname, tok.Text); err != nil {
 		panic(err)
 	}
 
@@ -243,7 +243,7 @@ func (p *Parser) attrList() bool {
 func (p *Parser) group() bool {
 	tok := p.lexer.Next()
 	if tok.Type == GROUPBEGIN {
-		if err := p.listener.GroupBegin(); err != nil {
+		if err := p.builder.GroupBegin(); err != nil {
 			panic(err)
 		}
 
@@ -256,7 +256,7 @@ func (p *Parser) group() bool {
 			panic(errors.New(") is required in the end of a group"))
 			//return false
 		}
-		if err := p.listener.GroupEnd(); err != nil {
+		if err := p.builder.GroupEnd(); err != nil {
 			panic(err)
 		}
 	} else {
@@ -287,7 +287,7 @@ func (p *Parser) multiplication() bool {
 		//return false
 	}
 
-	if err := p.listener.Mul(count); err != nil {
+	if err := p.builder.Mul(count); err != nil {
 		panic(err)
 	}
 
@@ -297,13 +297,13 @@ func (p *Parser) multiplication() bool {
 func (p *Parser) operator() bool {
 	tok := p.lexer.Next()
 	if tok.Type == CHILD {
-		if err := p.listener.OpChild(); err != nil {
+		if err := p.builder.OpChild(); err != nil {
 			panic(err)
 		}
 		return true
 
 	} else if tok.Type == SIBLING {
-		if err := p.listener.OpSibling(); err != nil {
+		if err := p.builder.OpSibling(); err != nil {
 			panic(err)
 		}
 		return true
@@ -332,7 +332,7 @@ func (p *Parser) repeatableOperator() bool {
 		}
 
 		if count > 0 {
-			if err := p.listener.OpClimbup(count); err != nil {
+			if err := p.builder.OpClimbup(count); err != nil {
 				panic(err)
 			}
 		}
