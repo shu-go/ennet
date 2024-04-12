@@ -121,8 +121,6 @@ func NewNodeListener() NodeListener {
 }
 
 func (nl *NodeListener) Element(name string) error {
-	debug("AST", "Element", name)
-
 	if nl.curr.Type == WIP {
 		nl.curr.Type = Element
 		nl.curr.Data = name
@@ -132,8 +130,6 @@ func (nl *NodeListener) Element(name string) error {
 }
 
 func (nl *NodeListener) Attribute(name, value string) error {
-	debug("AST", "Attribute", name, value)
-
 	if nl.curr.Type == Text {
 		return errors.New("attribute of Text")
 	}
@@ -159,28 +155,20 @@ func (nl *NodeListener) Attribute(name, value string) error {
 }
 
 func (nl *NodeListener) ID(name string) error {
-	debug("AST", "ID", name)
 	return nl.Attribute("id", name)
 }
 
 func (nl *NodeListener) Class(name string) error {
-	debug("AST", "Class", name)
 	return nl.Attribute("class", name)
 }
 
 func (nl *NodeListener) Mul(count int) error {
-	debug("AST", "Mul", count)
-
 	nl.curr.Mul = count
 
 	return nil
 }
 
 func (nl *NodeListener) Text(text string) error {
-	debug("AST", "Text", text)
-	//debug("AST", "Text", nl.Root.Dump())
-	//defer debug("AST", "Text", nl.Root.Dump())
-
 	if nl.curr.Type == Text {
 		nl.curr.Data += text
 		return nil
@@ -202,10 +190,6 @@ func (nl *NodeListener) Text(text string) error {
 }
 
 func (nl *NodeListener) GroupBegin() error {
-	debug("AST", "GroupBegin")
-	//debug("AST", "GroupBegin", nl.Root.Dump())
-	//defer debug("AST", "GroupBegin", nl.Root.Dump())
-
 	if nl.curr.Type == WIP {
 		nl.curr.Type = Group
 		node := &Node{Type: WIP}
@@ -240,9 +224,6 @@ func (nl *NodeListener) GroupEnd() error {
 }
 
 func (nl *NodeListener) OpChild() error {
-	//debug("AST", "OpChild", nl.Root.Dump())
-	//defer debug("AST", "OpChild", nl.Root.Dump())
-
 	node := &Node{Type: WIP}
 	nl.curr.AppendChild(node)
 	nl.curr = node
@@ -251,15 +232,9 @@ func (nl *NodeListener) OpChild() error {
 }
 
 func (nl *NodeListener) OpSibling() error {
-	debug("AST", "OpSibling")
-	debug("AST", "OpSibling", "curr", nl.curr.Type, nl.curr.Data)
-	debug("AST", "OpSibling", "parent", nl.curr.Parent.Type, nl.curr.Parent.Data)
-
 	node := &Node{Type: WIP}
 	nl.curr.Parent.AppendChild(node)
 	nl.curr = node
-
-	//debug("AST", "OpSibling", "family", nl.Root.Dump())
 
 	return nil
 }

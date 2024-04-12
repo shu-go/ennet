@@ -73,27 +73,17 @@ func (p *Parser) precheck(t ...TokenType) bool {
 }
 
 func (p *Parser) abbreviation() bool {
-	debug("abbreviation", "TRY", "group")
 	if p.precheck(GROUPBEGIN) && p.group() {
-		debug("abbreviation", "group")
-
+		// nop
 	} else {
-		debug("abbreviation", "!group")
-
-		debug("abbreviation", "TRY", "element")
 		if p.precheck( /*tagElement*/ STRING, TEXT) && p.element() {
-			debug("abbreviation", "element")
+			// nop
 		} else {
-			debug("abbreviation", "!element")
 			return false
 		}
 	}
 
-	debug("abbreviation", "TRY", "operator")
 	if p.precheck(CHILD, SIBLING /*repeatableOperator*/, CLIMBUP) && p.operator() {
-		debug("abbreviation", "operator")
-
-		debug("abbreviation", "TRY", "abbreviation")
 		return p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation()
 	}
 
@@ -101,23 +91,19 @@ func (p *Parser) abbreviation() bool {
 }
 
 func (p *Parser) element() bool {
-	debug("element", "TRY", "tagElement")
 	if p.precheck(STRING) && p.tagElement() {
-		debug("element", "tagElement")
+		// nop
 	} else {
-		debug("element", "TRY", "TEXT")
 		tok := p.lexer.Next()
 		if tok.Type != TEXT {
 			return false
 		}
-		debug("element", "TEXT", tok.Text)
 
 		if err := p.listener.Text(tok.Text); err != nil {
 			panic(err)
 		}
 	}
 
-	debug("element", "TRY(maybe)", "multiplication")
 	if p.precheck(MULT) {
 		p.multiplication()
 	}
@@ -126,46 +112,30 @@ func (p *Parser) element() bool {
 }
 
 func (p *Parser) tagElement() bool {
-	debug("tagElement", "TRY", "STRING")
 	tok := p.lexer.Next()
 	if tok.Type != STRING {
-		debug("tagElement", "!STRING", tok.Type)
 		return false
 	}
-	debug("tagElement", "STRING", tok.String())
 
 	if err := p.listener.Element(tok.Text); err != nil {
 		panic(err)
 	}
 
 	for {
-		debug("tagElement", "TRY", "id")
-		//debug(p.lexer.Dump())
 		if p.precheck(ID) && p.id() {
-			debug("tagElement", "id")
 			continue
 		}
-		debug("tagElement", "TRY", "class")
-		//debug(p.lexer.Dump())
 		if p.precheck(CLASS) && p.class() {
-			debug("tagElement", "class")
 			continue
 		}
-		debug("tagElement", "TRY", "attrList")
-		//debug(p.lexer.Dump())
 		if p.precheck(ATTRBEGIN) && p.attrList() {
-			debug("tagElement", "attrList")
 			continue
 		}
-		//debug(p.lexer.Dump())
 		break
 	}
 
-	debug("tagElement", "TRY", "TEXT")
 	tok = p.lexer.Next()
 	if tok.Type == TEXT {
-		debug("tagElement", "TEXT", tok.String())
-
 		if err := p.listener.Text(tok.Text); err != nil {
 			panic(err)
 		}
@@ -178,19 +148,14 @@ func (p *Parser) tagElement() bool {
 }
 
 func (p *Parser) id() bool {
-	debug("id", "TRY", "ID")
 	tok := p.lexer.Next()
 	if tok.Type != ID {
-		debug("id", "!ID", tok.Type)
 		return false
 	}
 
-	debug("id", "TRY", "STRING")
 	tok = p.lexer.Next()
 	if tok.Type != STRING {
-		debug("id", "!STRING")
 		panic(errors.New("id name is required"))
-		//return false
 	}
 
 	if err := p.listener.ID(tok.Text); err != nil {
@@ -201,19 +166,14 @@ func (p *Parser) id() bool {
 }
 
 func (p *Parser) class() bool {
-	debug("class", "TRY", "CLASS")
 	tok := p.lexer.Next()
 	if tok.Type != CLASS {
-		debug("class", "!CLASS", tok.String())
 		return false
 	}
 
-	debug("class", "TRY", "STRING")
 	tok = p.lexer.Next()
 	if tok.Type != STRING {
-		debug("class", "!STRING")
 		panic(errors.New("class name is required"))
-		//return false
 	}
 
 	if err := p.listener.Class(tok.Text); err != nil {
@@ -224,7 +184,6 @@ func (p *Parser) class() bool {
 }
 
 func (p *Parser) attr() bool {
-	debug("attr", "TRY", "STRING")
 	tok := p.lexer.Next()
 	if tok.Type != STRING {
 		return false
@@ -232,7 +191,6 @@ func (p *Parser) attr() bool {
 
 	attrname := tok.Text
 
-	debug("attr", "TRY", "EQ")
 	tok = p.lexer.Next()
 	if tok.Type != EQ {
 		p.lexer.Back()
@@ -244,7 +202,6 @@ func (p *Parser) attr() bool {
 		return true
 	}
 
-	debug("attr", "TRY", "QTEXT")
 	tok = p.lexer.Next()
 	if tok.Type != QTEXT && tok.Type != STRING {
 		panic(errors.New("attr value is required"))
@@ -259,10 +216,8 @@ func (p *Parser) attr() bool {
 }
 
 func (p *Parser) attrList() bool {
-	debug("attrList", "TRY", "ATTRBEGIN")
 	tok := p.lexer.Next()
 	if tok.Type != ATTRBEGIN {
-		debug("attrList", "!ATTRBEGIN", tok.String())
 		return false
 	}
 
@@ -364,10 +319,8 @@ func (p *Parser) operator() bool {
 
 func (p *Parser) repeatableOperator() bool {
 	count := 0
-	debug("rOperator", "TRY", "CLIMBUP")
 	tok := p.lexer.Next()
 	if tok.Type == CLIMBUP {
-		debug("rOperator", "CLIMBUP")
 		for {
 			if tok.Type == CLIMBUP {
 				count++
@@ -378,7 +331,6 @@ func (p *Parser) repeatableOperator() bool {
 			}
 		}
 
-		debug("rOperator", "CLIMBUP", count)
 		if count > 0 {
 			if err := p.listener.OpClimbup(count); err != nil {
 				panic(err)
