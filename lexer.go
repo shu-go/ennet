@@ -26,14 +26,25 @@ type Lexer struct {
 func NewLexer(in io.Reader) *Lexer {
 	r := readerPool.Get().(*bufio.Reader)
 	r.Reset(in)
+
+	ps := tokensPool.Get().(*[]Token)
+	//println("new", cap(*ps))
+	s := *ps
+	s = s[:0]
+
 	return &Lexer{
 		in:       r,
 		pos:      1,
-		scanning: make([]Token, 0, 16),
+		scanning: s,
 	}
 }
 
 func (l *Lexer) Close() {
+	s := l.scanning
+	ps := &s
+	//println("close", cap(*ps))
+	tokensPool.Put(ps)
+
 	readerPool.Put(l.in)
 	*l = Lexer{}
 }
@@ -309,5 +320,13 @@ func (l *Lexer) skipSpace(initr byte) int {
 var readerPool = sync.Pool{
 	New: func() any {
 		return bufio.NewReader(nil)
+	},
+}
+
+var tokensPool = sync.Pool{
+	New: func() any {
+		//println("new")
+		s := make([]Token, 0, 16)
+		return &s
 	},
 }

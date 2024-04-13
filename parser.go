@@ -32,18 +32,21 @@ type Parser struct {
 }
 
 func Parse(in io.Reader, builder Builder) (parseError error) {
-	defer func() {
-		if err, ok := recover().(error); ok {
-			parseError = err
-		} else if err != nil {
-			panic(err)
-		}
-	}()
-
 	p := Parser{
 		lexer:   NewLexer(in),
 		builder: builder,
 	}
+
+	defer func() {
+		if err, ok := recover().(error); ok {
+			parseError = err
+		} else if err != nil {
+			p.lexer.Close()
+			panic(err)
+		}
+		p.lexer.Close()
+	}()
+
 	result := p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation()
 
 	tok := p.lexer.Next()
@@ -53,10 +56,9 @@ func Parse(in io.Reader, builder Builder) (parseError error) {
 		return errors.New("parsing failed because of extra " + tok.String() + strconv.Itoa(tok.Pos))
 	}
 	if !result {
+		p.lexer.Close()
 		return errors.New("parse error")
 	}
-
-	p.lexer.Close()
 
 	return nil
 }
