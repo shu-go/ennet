@@ -1,7 +1,6 @@
 package ennet_test
 
 import (
-	"bytes"
 	"strconv"
 	"testing"
 
@@ -10,8 +9,7 @@ import (
 )
 
 func input(s string) *ennet.Lexer {
-	b := bytes.NewBufferString(s)
-	return ennet.NewLexer(b)
+	return ennet.NewLexer([]byte(s))
 }
 
 func test(t *testing.T, l *ennet.Lexer, tokens ...ennet.Token) {

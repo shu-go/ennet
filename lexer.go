@@ -1,7 +1,7 @@
 package ennet
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"sync"
@@ -14,7 +14,7 @@ func (l *Lexer) Dump() string {
 }
 
 type Lexer struct {
-	in  *bufio.Reader
+	in  *bytes.Buffer
 	pos int
 
 	// if len(scanning) == scanpos: next is read from in
@@ -23,9 +23,10 @@ type Lexer struct {
 	scanpos  int
 }
 
-func NewLexer(in io.Reader) *Lexer {
-	r := readerPool.Get().(*bufio.Reader)
-	r.Reset(in)
+func NewLexer(b []byte) *Lexer {
+	r := readerPool.Get().(*bytes.Buffer)
+	r.Reset()
+	r.Write(b)
 
 	ps := tokensPool.Get().(*[]Token)
 	//println("new", cap(*ps))
@@ -319,7 +320,7 @@ func (l *Lexer) skipSpace(initr byte) int {
 
 var readerPool = sync.Pool{
 	New: func() any {
-		return bufio.NewReader(nil)
+		return &bytes.Buffer{}
 	},
 }
 

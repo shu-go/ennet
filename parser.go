@@ -2,7 +2,6 @@ package ennet
 
 import (
 	"errors"
-	"io"
 	"strconv"
 )
 
@@ -31,9 +30,9 @@ type Parser struct {
 	builder Builder
 }
 
-func Parse(in io.Reader, builder Builder) (parseError error) {
+func Parse(b []byte, builder Builder) (parseError error) {
 	p := Parser{
-		lexer:   NewLexer(in),
+		lexer:   NewLexer(b),
 		builder: builder,
 	}
 

@@ -26,7 +26,7 @@ func Expand(s string) (string, error) {
 	b.WriteString(s)
 
 	nl := NewNodeBuilder(WithPool(&nodePool))
-	err := Parse(b, &nl)
+	err := Parse(b.Bytes(), &nl)
 	if err != nil {
 		return "", err
 	}

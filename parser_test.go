@@ -1,7 +1,6 @@
 package ennet_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/shu-go/ennet"
@@ -10,7 +9,7 @@ import (
 
 func TestParser(t *testing.T) {
 	t.Run("Element", func(t *testing.T) {
-		b := bytes.NewBufferString(`a`)
+		b := []byte(`a`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -20,7 +19,7 @@ func TestParser(t *testing.T) {
 	})
 
 	t.Run("Text", func(t *testing.T) {
-		b := bytes.NewBufferString(`{hoge}`)
+		b := []byte(`{hoge}`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -31,7 +30,7 @@ func TestParser(t *testing.T) {
 	})
 
 	t.Run("Child", func(t *testing.T) {
-		b := bytes.NewBufferString(`a>b>c`)
+		b := []byte(`a>b>c`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -43,7 +42,7 @@ func TestParser(t *testing.T) {
 	})
 
 	t.Run("Sibling", func(t *testing.T) {
-		b := bytes.NewBufferString(`a+b+c`)
+		b := []byte(`a+b+c`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -55,7 +54,7 @@ func TestParser(t *testing.T) {
 	})
 
 	t.Run("IDClassAttrText", func(t *testing.T) {
-		b := bytes.NewBufferString(`a#idid.cls.cls2[attr1 attr2="value2" attr3='value3']{text desu}`)
+		b := []byte(`a#idid.cls.cls2[attr1 attr2="value2" attr3='value3']{text desu}`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -71,7 +70,7 @@ func TestParser(t *testing.T) {
 	})
 
 	t.Run("Family", func(t *testing.T) {
-		b := bytes.NewBufferString(`a+b>c^d`)
+		b := []byte(`a+b>c^d`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -92,7 +91,7 @@ func TestParser(t *testing.T) {
 
 func TestParserEmmetDocumentation(t *testing.T) {
 	t.Run("div>ul>li", func(t *testing.T) {
-		b := bytes.NewBufferString(`div>ul>li`)
+		b := []byte(`div>ul>li`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -105,7 +104,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run("div+p+bq", func(t *testing.T) {
-		b := bytes.NewBufferString(`div+p+bq`)
+		b := []byte(`div+p+bq`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -118,7 +117,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run("div+div>p>span+em", func(t *testing.T) {
-		b := bytes.NewBufferString(`div+div>p>span+em`)
+		b := []byte(`div+div>p>span+em`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -133,7 +132,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run("div+div>p>span+em^bq", func(t *testing.T) {
-		b := bytes.NewBufferString(`div+div>p>span+em^bq`)
+		b := []byte(`div+div>p>span+em^bq`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -149,7 +148,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run("div+div>p>span+em^^^bq", func(t *testing.T) {
-		b := bytes.NewBufferString(`div+div>p>span+em^^^bq`)
+		b := []byte(`div+div>p>span+em^^^bq`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -165,7 +164,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run("ul>li*5", func(t *testing.T) {
-		b := bytes.NewBufferString(`ul>li*5`)
+		b := []byte(`ul>li*5`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -177,7 +176,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run("div>(header>ul>li*2>a)+footer>p", func(t *testing.T) {
-		b := bytes.NewBufferString(`div>(header>ul>li*2>a)+footer>p`)
+		b := []byte(`div>(header>ul>li*2>a)+footer>p`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -195,7 +194,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run("(div>dl>(dt+dd)*3)+footer>p", func(t *testing.T) {
-		b := bytes.NewBufferString(`(div>dl>(dt+dd)*3)+footer>p`)
+		b := []byte(`(div>dl>(dt+dd)*3)+footer>p`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -213,7 +212,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run("div#header+div.page+div#footer.class1.class2.class3", func(t *testing.T) {
-		b := bytes.NewBufferString(`div#header+div.page+div#footer.class1.class2.class3`)
+		b := []byte(`div#header+div.page+div#footer.class1.class2.class3`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -226,7 +225,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run(`td[title="Hello world!" colspan=3]`, func(t *testing.T) {
-		b := bytes.NewBufferString(`td[title="Hello world!" colspan=3]`)
+		b := []byte(`td[title="Hello world!" colspan=3]`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -237,7 +236,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run(`ul>li.item$*5`, func(t *testing.T) {
-		b := bytes.NewBufferString(`ul>li.item$*5`)
+		b := []byte(`ul>li.item$*5`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -249,7 +248,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run(`ul>li.item$@-*5`, func(t *testing.T) {
-		b := bytes.NewBufferString(`ul>li.item$@-*5`)
+		b := []byte(`ul>li.item$@-*5`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -261,7 +260,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run(`ul>li.item$@3*5`, func(t *testing.T) {
-		b := bytes.NewBufferString(`ul>li.item$@3*5`)
+		b := []byte(`ul>li.item$@3*5`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -273,7 +272,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run(`ul>li.item$@-3*5`, func(t *testing.T) {
-		b := bytes.NewBufferString(`ul>li.item$@-3*5`)
+		b := []byte(`ul>li.item$@-3*5`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -285,7 +284,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run(`a{Click me}`, func(t *testing.T) {
-		b := bytes.NewBufferString(`a{Click me}`)
+		b := []byte(`a{Click me}`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -297,7 +296,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run(`p>{Click }+a{here}+{ to continue}`, func(t *testing.T) {
-		b := bytes.NewBufferString(`p>{Click }+a{here}+{ to continue}`)
+		b := []byte(`p>{Click }+a{here}+{ to continue}`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -312,7 +311,7 @@ func TestParserEmmetDocumentation(t *testing.T) {
 	})
 
 	t.Run(`p{Click }+a{here}+{ to continue}`, func(t *testing.T) {
-		b := bytes.NewBufferString(`p{Click }+a{here}+{ to continue}`)
+		b := []byte(`p{Click }+a{here}+{ to continue}`)
 		nl := ennet.NewNodeBuilder()
 
 		err := ennet.Parse(b, &nl)
@@ -329,61 +328,61 @@ func TestParserEmmetDocumentation(t *testing.T) {
 
 func TestParserError(t *testing.T) {
 	t.Run("Missing", func(t *testing.T) {
-		b := bytes.NewBufferString(`a#`)
+		b := []byte(`a#`)
 		nl := ennet.NewNodeBuilder()
 		err := ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, "id name is required")
 
-		b = bytes.NewBufferString(`a.`)
+		b = []byte(`a.`)
 		nl = ennet.NewNodeBuilder()
 		err = ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, "class name is required")
 
-		b = bytes.NewBufferString(`a[attr=]`)
+		b = []byte(`a[attr=]`)
 		nl = ennet.NewNodeBuilder()
 		err = ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, "attr value is required")
 
-		b = bytes.NewBufferString(`a[attr`)
+		b = []byte(`a[attr`)
 		nl = ennet.NewNodeBuilder()
 		err = ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, "] is required in the end of attrs")
 
 		// this is OK
-		b = bytes.NewBufferString(`a[attr]`)
+		b = []byte(`a[attr]`)
 		nl = ennet.NewNodeBuilder()
 		err = ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, nil)
 
-		b = bytes.NewBufferString(`a*`)
+		b = []byte(`a*`)
 		nl = ennet.NewNodeBuilder()
 		err = ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, "a number following * is required")
 	})
 
 	t.Run("OperatorFirst", func(t *testing.T) {
-		b := bytes.NewBufferString(`+hoge`)
+		b := []byte(`+hoge`)
 		nl := ennet.NewNodeBuilder()
 		err := ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, "+")
 	})
 
 	t.Run("MulFirst", func(t *testing.T) {
-		b := bytes.NewBufferString(`*9`)
+		b := []byte(`*9`)
 		nl := ennet.NewNodeBuilder()
 		err := ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, "*")
 	})
 
 	t.Run("AttrOfText", func(t *testing.T) {
-		b := bytes.NewBufferString(`{hoge}[aabc]`)
+		b := []byte(`{hoge}[aabc]`)
 		nl := ennet.NewNodeBuilder()
 		err := ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, "[")
 	})
 
 	t.Run("WrongOrder", func(t *testing.T) {
-		b := bytes.NewBufferString(`a{hoge}[aabc]`)
+		b := []byte(`a{hoge}[aabc]`)
 		nl := ennet.NewNodeBuilder()
 		err := ennet.Parse(b, &nl)
 		gotwant.TestError(t, err, "[")
