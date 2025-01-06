@@ -71,15 +71,16 @@ func (l *Lexer) Back() {
 }
 
 func (l *Lexer) Peek() Token {
-	var tok Token
-	if l.scanpos == len(l.scanning) {
-		tok = l.scanNext()
-		l.scanning = append(l.scanning, tok)
-	} else { // l.scanpos < len(l.scanning)
-		tok = l.scanning[l.scanpos]
+	if l.scanpos < len(l.scanning) {
+		return l.scanning[l.scanpos]
 	}
 
+	//if l.scanpos == len(l.scanning) {
+	tok := l.scanNext()
+	l.scanning = append(l.scanning, tok)
 	return tok
+	//}
+
 }
 
 func (l *Lexer) scanNext() Token {
@@ -91,7 +92,7 @@ func (l *Lexer) scanNext() Token {
 			Type: EOF,
 			Pos:  l.pos,
 		}
-	} else if err != nil && err != io.EOF {
+	} else if err != nil {
 		return Token{
 			Type: ERR,
 			Text: err.Error(),
@@ -199,7 +200,7 @@ func (l *Lexer) scanNext() Token {
 				if cc == quot {
 					l.pos++
 					text = append(text, c)
-				} else if err != nil && err == io.EOF {
+				} else if err == io.EOF {
 					break
 				} else {
 					l.in.UnreadByte()
@@ -220,7 +221,7 @@ func (l *Lexer) scanNext() Token {
 		text := []byte{}
 		for {
 			c, err = l.in.ReadByte()
-			if err != nil && err == io.EOF {
+			if err == io.EOF {
 				return Token{
 					Type: ERR,
 					Text: "sudden EOF",
@@ -240,7 +241,7 @@ func (l *Lexer) scanNext() Token {
 				if rr == '}' {
 					l.pos++
 					text = append(text, c)
-				} else if err != nil && err == io.EOF {
+				} else if err == io.EOF {
 					break
 				} else {
 					l.in.UnreadByte()
@@ -268,7 +269,7 @@ func (l *Lexer) scanNext() Token {
 		id := []byte{c}
 		for {
 			c, err = l.in.ReadByte()
-			if err != nil && err == io.EOF {
+			if err == io.EOF {
 				return Token{
 					Type: STRING,
 					Text: string(id),
@@ -303,7 +304,7 @@ func (l *Lexer) skipSpace(initr byte) int {
 	if isSpace(initr) {
 		for {
 			r, err := l.in.ReadByte()
-			if err != nil && err == io.EOF {
+			if err == io.EOF {
 				return posdelta
 			}
 
