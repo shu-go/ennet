@@ -170,7 +170,7 @@ func (l *Lexer) scanNext() Token {
 
 	case '\'', '"':
 		quot := c
-		text := []byte{}
+		text := make([]byte, 0, 16)
 		for {
 			c, err = l.in.ReadByte()
 			if err == io.EOF {
@@ -218,7 +218,7 @@ func (l *Lexer) scanNext() Token {
 		}
 
 	case '{':
-		text := []byte{}
+		text := make([]byte, 0, 16)
 		for {
 			c, err = l.in.ReadByte()
 			if err == io.EOF {
@@ -266,7 +266,7 @@ func (l *Lexer) scanNext() Token {
 		}
 
 		// STRING
-		id := []byte{c}
+		id := append(make([]byte, 0, 16), c)
 		for {
 			c, err = l.in.ReadByte()
 			if err == io.EOF {
