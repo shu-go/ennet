@@ -116,14 +116,14 @@ func applyMul(templ string, mul int) string {
 		return templ
 	}
 
-	result := ""
+	result := make([]byte, 0, len(templ)*mul)
 
 	for i := 0; i < mul; i++ {
-		t := templ
+		t := []byte(templ)
 
 		// replace all /(\$+)(@(-)?(\d+)?)?/
 		for {
-			start := strings.IndexByte(t, '$')
+			start := bytes.IndexByte(t, '$')
 			if start == -1 {
 				break
 			}
@@ -168,15 +168,21 @@ func applyMul(templ string, mul int) string {
 			}
 
 			if !minus {
-				t = t[:start] + fmt.Sprintf("%0"+strconv.Itoa(pad)+"d", base+i) + t[pos:]
+				tt := t
+				t = tt[:start]
+				t = fmt.Appendf(t, "%0"+strconv.Itoa(pad)+"d", base+i)
+				t = append(t, tt[pos:]...)
 			} else {
-				t = t[:start] + fmt.Sprintf("%0"+strconv.Itoa(pad)+"d", base+mul-1-i) + t[pos:]
+				tt := t
+				t = tt[:start]
+				t = fmt.Appendf(t, "%0"+strconv.Itoa(pad)+"d", base+mul-1-i)
+				t = append(t, tt[pos:]...)
 			}
 		}
 
-		result += t
+		result = append(result, t...)
 	}
-	return result
+	return string(result)
 }
 
 func debug(a ...any) {
