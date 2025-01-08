@@ -10,7 +10,6 @@ package ennet
 import (
 	"bytes"
 	"fmt"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -112,33 +111,72 @@ func expand(n *Node) string {
 	return ""
 }
 
-var mulre = regexp.MustCompile(`(\$+)(@(-)?(\d+)?)?`)
-
-func applyMul(s string, mul int) string {
-	if mul > 0 {
-		templ := s
-		s = ""
-		for i := 0; i < mul; i++ {
-			s += mulre.ReplaceAllStringFunc(templ, func(tgt string) string {
-				g := mulre.FindStringSubmatch(tgt)
-				//debug(tgt, g)
-				minus := false
-				base := 1
-				pad := len(g[1])
-				minus = g[3] == "-"
-				if g[4] != "" {
-					base, _ = strconv.Atoi(g[4])
-				}
-
-				if !minus {
-					return fmt.Sprintf("%0"+strconv.Itoa(pad)+"d", base+i)
-				} else {
-					return fmt.Sprintf("%0"+strconv.Itoa(pad)+"d", base+mul-1-i)
-				}
-			})
-		}
+func applyMul(templ string, mul int) string {
+	if mul <= 0 {
+		return templ
 	}
-	return s
+
+	result := ""
+
+	for i := 0; i < mul; i++ {
+		t := templ
+
+		// replace all /(\$+)(@(-)?(\d+)?)?/
+		for {
+			start := strings.IndexByte(t, '$')
+			if start == -1 {
+				break
+			}
+
+			pad := 1
+			minus := false
+			base := 1
+
+			// /(\$+)/
+			pos := start + pad
+			for {
+				if len(t) <= pos || t[pos] != '$' {
+					break
+				}
+				pad++
+				pos++
+			}
+
+			// /(@(-)?(\d+)?)?/
+			if len(t) > pos && t[pos] == '@' {
+				pos++
+
+				// /(-)?/
+				if len(t) > pos && t[pos] == '-' {
+					minus = true
+					pos++
+				}
+
+				// /(\d+)?/
+				base = 0
+				for {
+					if len(t) <= pos || t[pos] < '0' || t[pos] > '9' {
+						break
+					}
+
+					base = base*10 + int(t[pos]-'0')
+					pos++
+				}
+				if base == 0 {
+					base = 1
+				}
+			}
+
+			if !minus {
+				t = t[:start] + fmt.Sprintf("%0"+strconv.Itoa(pad)+"d", base+i) + t[pos:]
+			} else {
+				t = t[:start] + fmt.Sprintf("%0"+strconv.Itoa(pad)+"d", base+mul-1-i) + t[pos:]
+			}
+		}
+
+		result += t
+	}
+	return result
 }
 
 func debug(a ...any) {
