@@ -201,8 +201,22 @@ func TestEnnetDocumentation(t *testing.T) {
 }
 
 func BenchmarkEnnet(b *testing.B) {
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, _ = ennet.Expand(`div>(header>ul>li*2>a)+footer>p`)
-	}
+	b.Run(`1 div+div>p>span+em^^^bq`, func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = ennet.Expand(`div>(header>ul>li*2>a)+footer>p`)
+		}
+	})
+	b.Run(`2 div>(header>ul>li*2>a)+footer>p`, func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = ennet.Expand(`div>(header>ul>li*2>a)+footer>p`)
+		}
+	})
+	b.Run(`3 ul>li.item$$$@-3*5`, func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = ennet.Expand(`ul>li.item$$$@-3*5`)
+		}
+	})
 }
