@@ -24,15 +24,16 @@ func Expand(s string) (string, error) {
 	b.Reset()
 	b.WriteString(s)
 
-	nl := NewNodeBuilder(WithPool(&nodePool))
-	err := Parse(b.Bytes(), &nl)
+	nodeBuilder := NewNodeBuilder(WithPool(&nodePool))
+	err := Parse(b.Bytes(), &nodeBuilder)
 	if err != nil {
+		expandBufPool.Put(b)
 		return "", err
 	}
 
-	result := expand(nl.Root)
+	result := expand(nodeBuilder.Root)
 
-	gcNodes(&nl, &nodePool, nl.Root)
+	gcNodes(&nodeBuilder, &nodePool, nodeBuilder.Root)
 
 	expandBufPool.Put(b)
 	return result, nil
