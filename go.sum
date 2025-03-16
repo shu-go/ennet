@@ -2,3 +2,5 @@ github.com/shu-go/gotwant v0.0.0-20190920074605-b4f19c0bac91 h1:nwDc3kHbf9scf1UZ
 github.com/shu-go/gotwant v0.0.0-20190920074605-b4f19c0bac91/go.mod h1:FZepfqvib0mXjHiaQPTv0RUD5QMpMA/FHLfBQjZRRQg=
 golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 h1:yqrTHse8TCMW1M1ZCP+VAR/l0kKxwaAIqN/il7x4voA=
 golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8/go.mod h1:tujkw807nyEEAamNbDrEGzRav+ilXA7PCRAd6xsmwiU=
+golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 h1:nDVHiLt8aIbd/VzvPWN6kSOPE7+F/fNFDSXLVYkE/Iw=
+golang.org/x/exp v0.0.0-20250305212735-054e65f0b394/go.mod h1:sIifuuw/Yco/y6yb6+bDNfyeQ/MdPUy/hKEMYQV17cM=
