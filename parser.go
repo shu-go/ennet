@@ -46,7 +46,14 @@ func Parse(b []byte, builder Builder) (parseError error) {
 		p.lexer.Close()
 	}()
 
-	result := p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation()
+	t := p.lexer.Peek()
+	result := false
+	switch t.Type {
+	case GROUPBEGIN /*tagElement*/, STRING, TEXT:
+		result = p.abbreviation()
+	default:
+
+	}
 
 	tok := p.lexer.Next()
 	if tok.Type == ERR {
@@ -62,37 +69,42 @@ func Parse(b []byte, builder Builder) (parseError error) {
 	return nil
 }
 
-func (p *Parser) precheck(t ...TokenType) bool {
-	tok := p.lexer.Peek()
-
-	for i := 0; i < len(t); i++ {
-		if tok.Type == t[i] {
-			return true
-		}
-	}
-	return false
-}
-
 func (p *Parser) abbreviation() bool {
-	if p.precheck(GROUPBEGIN) && p.group() {
+	t := p.lexer.Peek()
+	if t.Type == GROUPBEGIN && p.group() {
 		// nop
 	} else {
-		if p.precheck( /*tagElement*/ STRING, TEXT) && p.element() {
-			// nop
-		} else {
+		switch t.Type {
+		case /*tagElement*/ STRING, TEXT:
+			if !p.element() {
+				return false
+			}
+		default:
 			return false
 		}
 	}
 
-	if p.precheck(CHILD, SIBLING /*repeatableOperator*/, CLIMBUP) && p.operator() {
-		return p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) && p.abbreviation()
+	t = p.lexer.Peek()
+	switch t.Type {
+	case CHILD, SIBLING /*repeatableOperator*/, CLIMBUP:
+		if p.operator() {
+			t = p.lexer.Peek()
+			switch t.Type {
+			case GROUPBEGIN /*tagElement*/, STRING, TEXT:
+				return p.abbreviation()
+			default:
+			}
+			return false
+		}
+	default:
 	}
 
 	return true
 }
 
 func (p *Parser) element() bool {
-	if p.precheck(STRING) && p.tagElement() {
+	t := p.lexer.Peek()
+	if t.Type == STRING && p.tagElement() {
 		// nop
 	} else {
 		tok := p.lexer.Next()
@@ -105,7 +117,8 @@ func (p *Parser) element() bool {
 		}
 	}
 
-	if p.precheck(MULT) {
+	t = p.lexer.Peek()
+	if t.Type == MULT {
 		p.multiplication()
 	}
 
@@ -123,14 +136,22 @@ func (p *Parser) tagElement() bool {
 	}
 
 	for {
-		if p.precheck(ID) && p.id() {
-			continue
-		}
-		if p.precheck(CLASS) && p.class() {
-			continue
-		}
-		if p.precheck(ATTRBEGIN) && p.attrList() {
-			continue
+		t := p.lexer.Peek()
+		switch t.Type {
+		case ID:
+			if p.id() {
+				continue
+			}
+		case CLASS:
+			if p.class() {
+				continue
+			}
+		case ATTRBEGIN:
+			if p.attrList() {
+				continue
+			}
+		default:
+
 		}
 		break
 	}
@@ -222,12 +243,14 @@ func (p *Parser) attrList() bool {
 		return false
 	}
 
-	if !p.precheck(STRING) || !p.attr() {
+	t := p.lexer.Peek()
+	if t.Type != STRING || !p.attr() {
 		panic(errors.New("AttrName as a string is required"))
 	}
 
 	for {
-		if !p.precheck(STRING) || !p.attr() {
+		t := p.lexer.Peek()
+		if t.Type != STRING || !p.attr() {
 			break
 		}
 	}
@@ -248,7 +271,13 @@ func (p *Parser) group() bool {
 			panic(err)
 		}
 
-		if !p.precheck(GROUPBEGIN /*tagElement*/, STRING, TEXT) || !p.abbreviation() {
+		t := p.lexer.Peek()
+		switch t.Type {
+		case GROUPBEGIN /*tagElement*/, STRING, TEXT:
+			if !p.abbreviation() {
+				panic(errors.New("A group or element is required"))
+			}
+		default:
 			panic(errors.New("A group or element is required"))
 		}
 
@@ -264,7 +293,8 @@ func (p *Parser) group() bool {
 		return false
 	}
 
-	if p.precheck(MULT) {
+	t := p.lexer.Peek()
+	if t.Type == MULT {
 		p.multiplication()
 	}
 
@@ -311,7 +341,8 @@ func (p *Parser) operator() bool {
 
 	} else {
 		p.lexer.Back()
-		if p.precheck(CLIMBUP) && p.repeatableOperator() {
+		t := p.lexer.Peek()
+		if t.Type == CLIMBUP && p.repeatableOperator() {
 			return true
 		}
 	}
