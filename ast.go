@@ -134,7 +134,7 @@ func WithPool(pool *sync.Pool) func(*NodeBuilder) {
 
 func NewNodeBuilder(opts ...NodeBuilderOption) NodeBuilder {
 	var b NodeBuilder
-	for i := 0; i < len(opts); i++ {
+	for i := range opts {
 		opts[i](&b)
 	}
 
@@ -270,7 +270,7 @@ func (nb *NodeBuilder) OpSibling() error {
 }
 
 func (nb *NodeBuilder) OpClimbup(count int) error {
-	for i := 0; i < count; i++ {
+	for range count {
 		if nb.curr.Parent == nil || nb.curr.Parent.Type == Root {
 			break
 		}

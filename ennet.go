@@ -119,7 +119,7 @@ func applyMul(templ string, mul int) string {
 
 	result := make([]byte, 0, len(templ)*mul)
 
-	for i := 0; i < mul; i++ {
+	for i := range mul {
 		t := []byte(templ)
 
 		// replace all /(\$+)(@(-)?(\d+)?)?/
