@@ -77,11 +77,12 @@ func (n *Node) Dump() string {
 }
 
 func (n *Node) dump(indent int) string {
-	s := strings.Repeat(" ", indent*2)
+	var s strings.Builder
+	s.WriteString(strings.Repeat(" ", indent*2))
 	if n.Type == Element || n.Type == Group {
-		s += n.Data + ":" + n.Type.String()
+		s.WriteString(n.Data + ":" + n.Type.String())
 	} else if n.Type == Text {
-		s += `"` + n.Data + `"`
+		s.WriteString(`"` + n.Data + `"`)
 	}
 
 	if len(n.Attributes) > 0 {
@@ -91,20 +92,20 @@ func (n *Node) dump(indent int) string {
 			return strings.Compare(a.Name, b.Name)
 		})
 		for _, attr := range attrs {
-			s += " @" + attr.Name + "=" + attr.Value
+			s.WriteString(" @" + attr.Name + "=" + attr.Value)
 		}
 	}
 
 	if n.Mul > 1 {
-		s += " *" + strconv.Itoa(n.Mul)
+		s.WriteString(" *" + strconv.Itoa(n.Mul))
 	}
 
 	child := n.FirstChild
 	for child != nil {
-		s += "\n" + child.dump(indent+1)
+		s.WriteString("\n" + child.dump(indent+1))
 		child = child.NextSibling
 	}
-	return s
+	return s.String()
 }
 
 type Builder interface {

@@ -130,7 +130,7 @@ type segment struct {
 func writeMul(w io.Writer, templ []byte, mul int) {
 	segments := parseTemplate(templ)
 	var numBuf [32]byte
-	for i := 0; i < mul; i++ {
+	for i := range mul {
 		for _, seg := range segments {
 			if !seg.isPH {
 				w.Write(seg.literal)
