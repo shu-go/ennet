@@ -61,11 +61,11 @@ func TestParser(t *testing.T) {
 		gotwant.TestError(t, err, nil)
 
 		gotwant.Test(t, nl.Root.FirstChild.Data, "a")
-		gotwant.Test(t, nl.Root.FirstChild.Attribute["id"], "idid")
-		gotwant.Test(t, nl.Root.FirstChild.Attribute["class"], "cls cls2")
-		gotwant.Test(t, nl.Root.FirstChild.Attribute["attr1"], "")
-		gotwant.Test(t, nl.Root.FirstChild.Attribute["attr2"], "value2")
-		gotwant.Test(t, nl.Root.FirstChild.Attribute["attr3"], "value3")
+		gotwant.Test(t, nl.Root.FirstChild.GetAttribute("id"), "idid")
+		gotwant.Test(t, nl.Root.FirstChild.GetAttribute("class"), "cls cls2")
+		gotwant.Test(t, nl.Root.FirstChild.GetAttribute("attr1"), "")
+		gotwant.Test(t, nl.Root.FirstChild.GetAttribute("attr2"), "value2")
+		gotwant.Test(t, nl.Root.FirstChild.GetAttribute("attr3"), "value3")
 		gotwant.Test(t, nl.Root.FirstChild.FirstChild.Data, "text desu")
 	})
 

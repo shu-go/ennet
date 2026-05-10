@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"golang.org/x/exp/maps"
 )
 
 type NodeType uint8
@@ -36,14 +34,28 @@ func (t NodeType) String() string {
 	return "???"
 }
 
+type Attribute struct {
+	Name  string
+	Value string
+}
+
 type Node struct {
-	Type      NodeType
-	Data      string
-	Attribute map[string]string
+	Type       NodeType
+	Data       string
+	Attributes []Attribute
 
 	Mul int
 
 	Parent, FirstChild, LastChild, NextSibling, PrevSibling *Node
+}
+
+func (n *Node) GetAttribute(name string) string {
+	for _, attr := range n.Attributes {
+		if attr.Name == name {
+			return attr.Value
+		}
+	}
+	return ""
 }
 
 func (n *Node) AppendChild(child *Node) *Node {
@@ -72,11 +84,14 @@ func (n *Node) dump(indent int) string {
 		s += `"` + n.Data + `"`
 	}
 
-	if len(n.Attribute) > 0 {
-		keys := maps.Keys(n.Attribute)
-		slices.Sort(keys)
-		for _, k := range keys {
-			s += " @" + k + "=" + n.Attribute[k]
+	if len(n.Attributes) > 0 {
+		attrs := make([]Attribute, len(n.Attributes))
+		copy(attrs, n.Attributes)
+		slices.SortFunc(attrs, func(a, b Attribute) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		for _, attr := range attrs {
+			s += " @" + attr.Name + "=" + attr.Value
 		}
 	}
 
@@ -118,7 +133,10 @@ type NodeBuilder struct {
 func (b *NodeBuilder) NewNode() *Node {
 	if b.pool != nil {
 		n := b.pool.Get().(*Node)
+		// keep existing slice capacity
+		attrs := n.Attributes
 		*n = Node{}
+		n.Attributes = attrs[:0]
 		return n
 	}
 	return &Node{}
@@ -170,15 +188,13 @@ func (nb *NodeBuilder) Attribute(name, value string) error {
 		nb.curr.Type = Element
 	}
 
-	if nb.curr.Attribute == nil {
-		nb.curr.Attribute = make(map[string]string)
+	for i := range nb.curr.Attributes {
+		if nb.curr.Attributes[i].Name == name {
+			nb.curr.Attributes[i].Value += " " + value
+			return nil
+		}
 	}
-
-	if v, found := nb.curr.Attribute[name]; found {
-		nb.curr.Attribute[name] = v + " " + value
-	} else {
-		nb.curr.Attribute[name] = value
-	}
+	nb.curr.Attributes = append(nb.curr.Attributes, Attribute{Name: name, Value: value})
 
 	return nil
 }
