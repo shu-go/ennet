@@ -1,62 +1,63 @@
 package ennet
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"sync"
+	"unsafe"
 )
+
+func unsafeString(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	return unsafe.String(&b[0], len(b))
+}
 
 func (l *Lexer) Dump() string {
 	return "*lexer dump:\n" +
-		fmt.Sprintf("  %+v\n", l.scanning) +
+		fmt.Sprintf("  %+v\n", *l.tokens) +
 		fmt.Sprintf("  %+v\n", l.scanpos)
 }
 
 type Lexer struct {
-	in  *bytes.Buffer
-	pos int
+	in     []byte
+	pos    int
+	offset int
 
-	// if len(scanning) == scanpos: next is read from in
-	// else: next is from scannin[scanpos], then scanpos++
-	scanning []Token
-	scanpos  int
+	// if len(*tokens) == scanpos: next is read from in
+	// else: next is from (*tokens)[scanpos], then scanpos++
+	tokens  *[]Token
+	scanpos int
 }
 
 func NewLexer(b []byte) *Lexer {
-	r := readerPool.Get().(*bytes.Buffer)
-	r.Reset()
-	r.Write(b)
-
+	l := lexerPool.Get().(*Lexer)
 	ps := tokensPool.Get().(*[]Token)
-	//println("new", cap(*ps))
-	s := *ps
-	s = s[:0]
+	*ps = (*ps)[:0]
 
-	return &Lexer{
-		in:       r,
-		pos:      1,
-		scanning: s,
-	}
+	l.in = b
+	l.pos = 1
+	l.offset = 0
+	l.tokens = ps
+	l.scanpos = 0
+	return l
 }
 
 func (l *Lexer) Close() {
-	s := l.scanning
-	ps := &s
-	//println("close", cap(*ps))
-	tokensPool.Put(ps)
-
-	readerPool.Put(l.in)
+	tokensPool.Put(l.tokens)
 	*l = Lexer{}
+	lexerPool.Put(l)
 }
 
 func (l *Lexer) Next() Token {
 	var tok Token
-	if l.scanpos == len(l.scanning) {
+	scanning := *l.tokens
+	if l.scanpos == len(scanning) {
 		tok = l.scanNext()
-		l.scanning = append(l.scanning, tok)
-	} else { // l.scanpos < len(l.scanning)
-		tok = l.scanning[l.scanpos]
+		*l.tokens = append(*l.tokens, tok)
+	} else { // l.scanpos < len(scanning)
+		tok = scanning[l.scanpos]
 	}
 	l.scanpos++
 
@@ -71,22 +72,35 @@ func (l *Lexer) Back() {
 }
 
 func (l *Lexer) Peek() Token {
-	if l.scanpos < len(l.scanning) {
-		return l.scanning[l.scanpos]
+	scanning := *l.tokens
+	if l.scanpos < len(scanning) {
+		return scanning[l.scanpos]
 	}
 
-	//if l.scanpos == len(l.scanning) {
 	tok := l.scanNext()
-	l.scanning = append(l.scanning, tok)
+	*l.tokens = append(*l.tokens, tok)
 	return tok
-	//}
+}
 
+func (l *Lexer) readByte() (byte, error) {
+	if l.offset >= len(l.in) {
+		return 0, io.EOF
+	}
+	b := l.in[l.offset]
+	l.offset++
+	return b, nil
+}
+
+func (l *Lexer) unreadByte() {
+	if l.offset > 0 {
+		l.offset--
+	}
 }
 
 func (l *Lexer) scanNext() Token {
 	startpos := l.pos
 
-	c, err := l.in.ReadByte()
+	c, err := l.readByte()
 	if err == io.EOF {
 		return Token{
 			Type: EOF,
@@ -170,9 +184,10 @@ func (l *Lexer) scanNext() Token {
 
 	case '\'', '"':
 		quot := c
-		text := make([]byte, 0, 16)
+		startOffset := l.offset
+		hasEscape := false
 		for {
-			c, err = l.in.ReadByte()
+			c, err = l.readByte()
 			if err == io.EOF {
 				return Token{
 					Type: ERR,
@@ -189,7 +204,7 @@ func (l *Lexer) scanNext() Token {
 			l.pos++
 
 			if c == quot {
-				cc, err := l.in.ReadByte()
+				cc, err := l.readByte()
 				if err != nil && err != io.EOF {
 					return Token{
 						Type: ERR,
@@ -199,18 +214,37 @@ func (l *Lexer) scanNext() Token {
 				}
 				if cc == quot {
 					l.pos++
-					text = append(text, c)
+					hasEscape = true
 				} else if err == io.EOF {
 					break
 				} else {
-					l.in.UnreadByte()
+					l.unreadByte()
 					break
 				}
-			} else {
-				text = append(text, c)
 			}
 		}
 
+		endOffset := l.offset - 1
+		if !hasEscape {
+			return Token{
+				Type: QTEXT,
+				Text: unsafeString(l.in[startOffset:endOffset]),
+				Pos:  startpos,
+			}
+		}
+
+		// Slow path: resolve escapes
+		text := make([]byte, 0, endOffset-startOffset)
+		l.offset = startOffset
+		for l.offset < endOffset {
+			b := l.in[l.offset]
+			l.offset++
+			if b == quot {
+				l.offset++
+			}
+			text = append(text, b)
+		}
+		l.offset = endOffset + 1
 		return Token{
 			Type: QTEXT,
 			Text: string(text),
@@ -218,9 +252,10 @@ func (l *Lexer) scanNext() Token {
 		}
 
 	case '{':
-		text := make([]byte, 0, 16)
+		startOffset := l.offset
+		hasEscape := false
 		for {
-			c, err = l.in.ReadByte()
+			c, err = l.readByte()
 			if err == io.EOF {
 				return Token{
 					Type: ERR,
@@ -237,21 +272,40 @@ func (l *Lexer) scanNext() Token {
 			l.pos++
 
 			if c == '}' {
-				rr, err := l.in.ReadByte()
+				rr, err := l.readByte()
 				if rr == '}' {
 					l.pos++
-					text = append(text, c)
+					hasEscape = true
 				} else if err == io.EOF {
 					break
 				} else {
-					l.in.UnreadByte()
+					l.unreadByte()
 					break
 				}
-			} else {
-				text = append(text, c)
 			}
 		}
 
+		endOffset := l.offset - 1
+		if !hasEscape {
+			return Token{
+				Type: TEXT,
+				Text: unsafeString(l.in[startOffset:endOffset]),
+				Pos:  startpos,
+			}
+		}
+
+		// Slow path: resolve escapes
+		text := make([]byte, 0, endOffset-startOffset)
+		l.offset = startOffset
+		for l.offset < endOffset {
+			b := l.in[l.offset]
+			l.offset++
+			if b == '}' {
+				l.offset++
+			}
+			text = append(text, b)
+		}
+		l.offset = endOffset + 1
 		return Token{
 			Type: TEXT,
 			Text: string(text),
@@ -260,19 +314,18 @@ func (l *Lexer) scanNext() Token {
 
 	default:
 		if isSpace(c) {
-			//fmt.Fprintf(os.Stderr, "skipping ... %q\n", string(r))
 			l.pos += l.skipSpace(c)
 			return l.scanNext()
 		}
 
 		// STRING
-		id := append(make([]byte, 0, 16), c)
+		startOffset := l.offset - 1
 		for {
-			c, err = l.in.ReadByte()
+			c, err = l.readByte()
 			if err == io.EOF {
 				return Token{
 					Type: STRING,
-					Text: string(id),
+					Text: unsafeString(l.in[startOffset:l.offset]),
 					Pos:  startpos,
 				}
 			} else if err != nil {
@@ -284,14 +337,12 @@ func (l *Lexer) scanNext() Token {
 			}
 			l.pos++
 
-			if isSTRING(c) {
-				id = append(id, c)
-			} else {
-				l.in.UnreadByte()
+			if !isSTRING(c) {
+				l.unreadByte()
 				l.pos--
 				return Token{
 					Type: STRING,
-					Text: string(id),
+					Text: unsafeString(l.in[startOffset:l.offset]),
 					Pos:  startpos,
 				}
 			}
@@ -303,14 +354,13 @@ func (l *Lexer) skipSpace(initr byte) int {
 	posdelta := 0
 	if isSpace(initr) {
 		for {
-			r, err := l.in.ReadByte()
+			r, err := l.readByte()
 			if err == io.EOF {
 				return posdelta
 			}
 
-			//fmt.Fprintf(os.Stderr, "    next ... %q\n", string(r))
 			if !isSpace(r) {
-				l.in.UnreadByte()
+				l.unreadByte()
 				return posdelta
 			}
 			posdelta++
@@ -319,16 +369,15 @@ func (l *Lexer) skipSpace(initr byte) int {
 	return posdelta
 }
 
-var readerPool = sync.Pool{
+var tokensPool = sync.Pool{
 	New: func() any {
-		return &bytes.Buffer{}
+		s := make([]Token, 0, 16)
+		return &s
 	},
 }
 
-var tokensPool = sync.Pool{
+var lexerPool = sync.Pool{
 	New: func() any {
-		//println("new")
-		s := make([]Token, 0, 16)
-		return &s
+		return &Lexer{}
 	},
 }

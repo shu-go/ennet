@@ -143,19 +143,9 @@ func (b *NodeBuilder) NewNode() *Node {
 	return &Node{}
 }
 
-type NodeBuilderOption func(*NodeBuilder)
-
-func WithPool(pool *sync.Pool) func(*NodeBuilder) {
-	return func(b *NodeBuilder) {
-		b.pool = pool
-	}
-}
-
-func NewNodeBuilder(opts ...NodeBuilderOption) NodeBuilder {
+func NewNodeBuilder(pool *sync.Pool) NodeBuilder {
 	var b NodeBuilder
-	for i := range opts {
-		opts[i](&b)
-	}
+	b.pool = pool
 
 	root := b.NewNode()
 	root.Type = Root

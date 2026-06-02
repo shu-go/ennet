@@ -9,7 +9,6 @@ package ennet
 
 import (
 	"bytes"
-	"io"
 	"slices"
 	"strconv"
 	"strings"
@@ -22,7 +21,7 @@ func Expand(s string) (string, error) {
 	b.Reset()
 	b.WriteString(s)
 
-	nodeBuilder := NewNodeBuilder(WithPool(&nodePool))
+	nodeBuilder := NewNodeBuilder(&nodePool)
 	err := Parse(b.Bytes(), &nodeBuilder)
 	if err != nil {
 		expandBufPool.Put(b)
@@ -54,7 +53,7 @@ func gcNodes(nb *NodeBuilder, pool *sync.Pool, n *Node) {
 	pool.Put(n)
 }
 
-func expand(n *Node, w io.Writer) {
+func expand(n *Node, w *bytes.Buffer) {
 	if n.Mul <= 0 {
 		expandNode(n, w)
 		return
@@ -67,10 +66,10 @@ func expand(n *Node, w io.Writer) {
 	expandBufPool.Put(buf)
 }
 
-func expandNode(n *Node, w io.Writer) {
+func expandNode(n *Node, w *bytes.Buffer) {
 	switch n.Type {
 	case Text:
-		io.WriteString(w, n.Data)
+		w.WriteString(n.Data)
 	case Root, Group:
 		curr := n.FirstChild
 		for curr != nil {
@@ -78,43 +77,43 @@ func expandNode(n *Node, w io.Writer) {
 			curr = curr.NextSibling
 		}
 	case Element:
-		io.WriteString(w, "<")
-		io.WriteString(w, n.Data)
+		w.WriteString("<")
+		w.WriteString(n.Data)
 		if len(n.Attributes) > 0 {
 			slices.SortFunc(n.Attributes, func(a, b Attribute) int {
 				return strings.Compare(a.Name, b.Name)
 			})
 			for _, attr := range n.Attributes {
-				io.WriteString(w, " ")
-				io.WriteString(w, attr.Name)
-				io.WriteString(w, `="`)
+				w.WriteString(" ")
+				w.WriteString(attr.Name)
+				w.WriteString(`="`)
 				// manual escape
 				val := attr.Value
 				last := 0
 				for i := 0; i < len(val); i++ {
 					if val[i] == '"' {
-						io.WriteString(w, val[last:i])
-						io.WriteString(w, `\"`)
+						w.WriteString(val[last:i])
+						w.WriteString(`\"`)
 						last = i + 1
 					}
 				}
-				io.WriteString(w, val[last:])
-				io.WriteString(w, `"`)
+				w.WriteString(val[last:])
+				w.WriteString(`"`)
 			}
 		}
 
 		if n.FirstChild == nil {
-			io.WriteString(w, " />")
+			w.WriteString(" />")
 		} else {
-			io.WriteString(w, ">")
+			w.WriteString(">")
 			curr := n.FirstChild
 			for curr != nil {
 				expand(curr, w)
 				curr = curr.NextSibling
 			}
-			io.WriteString(w, "</")
-			io.WriteString(w, n.Data)
-			io.WriteString(w, ">")
+			w.WriteString("</")
+			w.WriteString(n.Data)
+			w.WriteString(">")
 		}
 	}
 }
@@ -127,8 +126,10 @@ type segment struct {
 	minus   bool
 }
 
-func writeMul(w io.Writer, templ []byte, mul int) {
-	segments := parseTemplate(templ)
+func writeMul(w *bytes.Buffer, templ []byte, mul int) {
+	pSegs := segmentSlicePool.Get().(*[]segment)
+	segments := parseTemplateInto(templ, (*pSegs)[:0])
+
 	var numBuf [32]byte
 	for i := range mul {
 		for _, seg := range segments {
@@ -141,24 +142,24 @@ func writeMul(w io.Writer, templ []byte, mul int) {
 				}
 				b := strconv.AppendInt(numBuf[:0], int64(val), 10)
 				for j := 0; j < seg.pad-len(b); j++ {
-					io.WriteString(w, "0")
+					w.WriteString("0")
 				}
 				w.Write(b)
 			}
 		}
 	}
+
+	*pSegs = segments
+	segmentSlicePool.Put(pSegs)
 }
 
-func parseTemplate(templ []byte) []segment {
-	var segments []segment
+func parseTemplateInto(templ []byte, segments []segment) []segment {
 	last := 0
 	for i := 0; i < len(templ); i++ {
 		if templ[i] == '$' {
 			if i > last {
 				segments = append(segments, segment{literal: templ[last:i]})
 			}
-			start := i
-			_ = start
 			pad := 1
 			i++
 			for i < len(templ) && templ[i] == '$' {
@@ -204,5 +205,12 @@ var expandBufPool = sync.Pool{
 var nodePool = sync.Pool{
 	New: func() any {
 		return &Node{}
+	},
+}
+
+var segmentSlicePool = sync.Pool{
+	New: func() any {
+		s := make([]segment, 0, 16)
+		return &s
 	},
 }
